@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LWTC | Staff tools</title>
-<link rel="icon" type="image/svg+xml" href="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-icon-cluster.svg">
+<link rel="icon" type="image/svg+xml" href="assets/logos/svg/lwtc-icon-cluster.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -50,13 +50,14 @@ main { max-width: 1100px; margin: 0 auto; padding: var(--s5) var(--s4); }
 .notice { background: var(--gold-tint); border-radius: var(--r2); padding: var(--s3) var(--s4); max-width: 52ch; margin: 0; }
 .notice strong { font-weight: 700; }
 
-/* Brand shape: every round form is a circle with one square corner pointing to the group centre */
-.cluster { display: grid; grid-template-columns: repeat(2, clamp(72px, 14vw, 132px)); gap: var(--s2); }
-.cluster span { aspect-ratio: 1; background: var(--c); }
-.cluster span:nth-child(1) { border-radius: 48px 48px 0 48px; }
-.cluster span:nth-child(2) { border-radius: 48px 48px 48px 0; }
-.cluster span:nth-child(3) { border-radius: 48px 0 48px 48px; }
-.cluster span:nth-child(4) { border-radius: 0 48px 48px 48px; }
+/* The four program-area bubble icons, arranged like the brand cluster with their tails pointing at the empty centre.
+   Each image keeps its own proportions (object-fit: contain); nothing is recoloured, rotated or stretched. */
+.cluster { --cell: clamp(64px, 10vw, 104px); display: grid; grid-template-columns: repeat(3, var(--cell)); grid-template-rows: repeat(3, var(--cell)); }
+.cluster img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cluster .top { grid-column: 2; grid-row: 1; }
+.cluster .left { grid-column: 1; grid-row: 2; }
+.cluster .right { grid-column: 3; grid-row: 2; }
+.cluster .bottom { grid-column: 2; grid-row: 3; }
 
 /* Tools */
 .section-title { font-size: 26px; margin-bottom: var(--s4); }
@@ -88,7 +89,7 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
 
 <header>
   <div class="bar">
-    <a href="./"><img src="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College"></a>
+    <a href="./"><img src="assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College" onerror="this.onerror=null;this.src='assets/logos/png/lwtc-logo.png'"></a>
     <span class="bar-label">Staff tools</span>
   </div>
   <div class="hue-band" aria-hidden="true"></div>
@@ -102,8 +103,10 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
       <p class="notice"><strong>Staff sign-in is coming.</strong> Until it is ready, this page is open to anyone who has the link, so please share it only with colleagues.</p>
     </div>
     <div class="cluster" aria-hidden="true">
-      <span style="--c:var(--orange)"></span><span style="--c:var(--green)"></span>
-      <span style="--c:var(--gold)"></span><span style="--c:var(--blue)"></span>
+      <img class="top" src="assets/icons/svg/lwtc-bubble-orange.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-orange.png'">
+      <img class="left" src="assets/icons/svg/lwtc-bubble-green.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-green.png'">
+      <img class="right" src="assets/icons/svg/lwtc-bubble-gold.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-gold.png'">
+      <img class="bottom" src="assets/icons/svg/lwtc-bubble-blue.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-blue.png'">
     </div>
   </section>
 
