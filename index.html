@@ -37,7 +37,7 @@ a { color: inherit; }
 
 /* Header */
 .bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); max-width: 1100px; margin: 0 auto; padding: var(--s3) var(--s4); }
-.bar img { height: 56px; width: auto; display: block; }   /* keep at 48px or taller; the icon cluster is for smaller spaces */
+.bar img { height: 72px; width: auto; display: block; }   /* the guide's floor is 48px tall; larger keeps the small college name legible */
 .bar-label { font-family: var(--font-display); font-size: 20px; }
 .hue-band { height: 8px; background: linear-gradient(90deg, var(--orange) 0 25%, var(--green) 25% 50%, var(--gold) 50% 75%, var(--blue) 75% 100%); }
 
@@ -50,14 +50,15 @@ main { max-width: 1100px; margin: 0 auto; padding: var(--s5) var(--s4); }
 .notice { background: var(--gold-tint); border-radius: var(--r2); padding: var(--s3) var(--s4); max-width: 52ch; margin: 0; }
 .notice strong { font-weight: 700; }
 
-/* The four program-area bubble icons, arranged like the brand cluster with their tails pointing at the empty centre.
-   Each image keeps its own proportions (object-fit: contain); nothing is recoloured, rotated or stretched. */
-.cluster { --cell: clamp(64px, 10vw, 104px); display: grid; grid-template-columns: repeat(3, var(--cell)); grid-template-rows: repeat(3, var(--cell)); }
-.cluster img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.cluster .top { grid-column: 2; grid-row: 1; }
-.cluster .left { grid-column: 1; grid-row: 2; }
-.cluster .right { grid-column: 3; grid-row: 2; }
-.cluster .bottom { grid-column: 2; grid-row: 3; }
+/* The four program-area bubble icons at their exact positions in the brand cluster.
+   Each icon's viewBox is its own crop of the full logo artwork, so these offsets rebuild the original arrangement.
+   Nothing is recoloured, rotated or stretched (height stays automatic). */
+.cluster { position: relative; width: clamp(220px, 28vw, 330px); aspect-ratio: 717 / 706; }
+.cluster img { position: absolute; height: auto; display: block; }
+.cluster .top { left: 30.26%; top: 0.00%; width: 41.56%; }
+.cluster .left { left: 0.00%; top: 27.34%; width: 48.81%; }
+.cluster .right { left: 51.46%; top: 29.75%; width: 48.54%; }
+.cluster .bottom { left: 27.75%; top: 50.57%; width: 42.12%; }
 
 /* Tools */
 .section-title { font-size: 26px; margin-bottom: var(--s4); }
@@ -81,6 +82,7 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
   .cluster { order: -1; }
   main { padding: var(--s4) var(--s3); }
   .bar { padding: var(--s3); }
+  .bar img { height: 56px; }
   .bar-label { display: none; }
 }
 </style>
