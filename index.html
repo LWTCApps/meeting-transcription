@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LWTC | Meeting Minutes</title>
+<link rel="icon" type="image/svg+xml" href="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-icon-cluster.svg">
+
+<!-- Brand text face (Source Sans 3) and approved alternate display face (Alfa Slab One).
+     If these are blocked (e.g. Canvas CSP), the fallback stacks below take over. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Word export library, pinned. Falls back to cdnjs if jsDelivr is unreachable. -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script>window.docx || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"><\/script>');</script>
+
+<!-- Zip library for the recording package, pinned. If it fails to load, files download separately. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+/* ==========================================================
+   LWTC brand tokens  (source: lwtc-brandguide.lwtc.app)
+   Hues are used as fields and illustration only. Text is always ink,
+   because the four hues do not reach 4.5:1 against white.
+   ========================================================== */
+@font-face {
+  font-family: "LWTC Display";
+  src: local("NeueAachenPro-Bold"), local("ITC Neue Aachen Pro Bold"), local("Neue Aachen Pro Bold");
+  font-weight: 700;
+}
+:root {
+  --ink: #231F20;
+  --white: #FFFFFF;
+
+  --orange: #F37026;   /* mid of #F58220 → #F05A2B */
+  --orange-deep: #F05A2B;
+  --green: #92B547;    /* mid of #BDD14F → #6EA141 */
+  --gold: #FBB14A;     /* mid of #FFC45A → #F9A03C */
+  --blue: #4691A9;     /* mid of #54ADC3 → #3A7B96 */
+  --blue-deep: #3A7B96;
+
+  /* Light tints derived from the hues, for backgrounds behind ink text */
+  --orange-tint: #FDEADD;
+  --green-tint: #EEF4DB;
+  --gold-tint: #FEF0D9;
+  --blue-tint: #E1EEF3;
+
+  --muted: #5E5759;
+  --line: #E3DDDA;
+  --field-border: #7A7274;
+  --recording: #D92D20;  /* functional status colour, not a brand hue */
+
+  --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 48px;
+  --r1: 4px; --r2: 12px; --r3: 48px;
+
+  --font-display: "LWTC Display", "Alfa Slab One", "Clarendon Black", Rockwell, "Roboto Slab", Georgia, serif;
+  --font-text: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 1.5;
+}
+[hidden] { display: none !important; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; font-synthesis: none; margin: 0; line-height: 1.2; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue-deep); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Header ---------- */
+.site-header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  max-width: 1200px; margin: 0 auto;
+}
+.site-header img { height: 56px; width: auto; display: block; }   /* keep ≥48px tall; icon cluster below that */
+.site-header .page-title { font-family: var(--font-display); font-size: 22px; }
+.hue-band {
+  height: 8px;
+  background: linear-gradient(90deg,
+    var(--orange) 0 25%, var(--green) 25% 50%, var(--gold) 50% 75%, var(--blue) 75% 100%);
+}
+
+/* ---------- Layout ---------- */
+.layout {
+  max-width: 1200px; margin: 0 auto;
+  padding: var(--s5) var(--s4);
+  display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: var(--s5);
+  align-items: start;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; padding: var(--s4) var(--s3); gap: var(--s4); } }
+
+/* ---------- Sidebar steps ---------- */
+.step { padding-bottom: var(--s4); margin-bottom: var(--s4); border-bottom: 1px solid var(--line); }
+.step:last-child { border-bottom: 0; margin-bottom: 0; }
+.step-title { display: flex; align-items: center; gap: var(--s2); font-size: 20px; margin-bottom: var(--s3); }
+
+/* Brand shape: a circle with one square corner pointing toward the group centre */
+.bubble {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  background: var(--c, var(--orange)); color: var(--ink);
+  border-radius: 50% 50% 0 50%;
+  font-family: var(--font-display); font-size: 16px;
+}
+
+.field { margin-bottom: var(--s3); }
+.field label, .field .label { display: block; font-weight: 600; font-size: 14px; margin-bottom: var(--s1); }
+.hint { font-size: 14px; color: var(--muted); margin: var(--s1) 0 0; }
+input[type="text"], input[type="time"], input[type="date"], select, textarea {
+  width: 100%; padding: 10px 12px; min-height: 44px;
+  background: var(--white); border: 1.5px solid var(--field-border); border-radius: var(--r1);
+}
+textarea { min-height: 76px; resize: vertical; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.two-col .field { margin-bottom: var(--s3); }
+
+.check { display: flex; gap: var(--s2); align-items: flex-start; font-size: 15px; }
+.check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); flex: none; }
+
+.engine { background: var(--blue-tint); border-radius: var(--r2); padding: var(--s3); margin-bottom: var(--s3); }
+.engine .setup-warning { font-size: 14px; margin: var(--s2) 0 0; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 8px 24px;
+  border: 2px solid var(--ink); border-radius: var(--r3);
+  background: var(--white); color: var(--ink);
+  font-weight: 700; cursor: pointer; text-align: center;
+}
+.btn:hover:not(:disabled) { background: var(--gold-tint); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: var(--orange); }
+.btn-primary:hover:not(:disabled) { background: var(--orange-deep); }
+.btn-dark { background: var(--ink); color: var(--white); }
+.btn-dark:hover:not(:disabled) { background: #3b3536; }
+.btn-block { width: 100%; }
+.btn-small { min-height: 36px; padding: 4px 16px; font-size: 14px; }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); margin-top: var(--s2); }
+.stack { display: grid; gap: var(--s2); }
+
+.rec-status { display: flex; align-items: center; gap: var(--s2); margin: var(--s3) 0 0; min-height: 28px; font-weight: 600; }
+.rec-dot { width: 14px; height: 14px; background: #9B9395; border-radius: 50% 50% 0 50%; flex: none; }
+.rec-status.live .rec-dot { background: var(--recording); animation: pulse 1.5s infinite; }
+.rec-status.paused .rec-dot { background: var(--gold); }
+.rec-status output { font-variant-numeric: tabular-nums; margin-left: auto; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .rec-status.live .rec-dot { animation: none; } }
+
+/* ---------- Canvas ---------- */
+.sheet { border: 1.5px solid var(--ink); border-radius: var(--r2); min-height: 640px; display: flex; flex-direction: column; background: var(--white); }
+.sheet-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap;
+  padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); background: var(--blue-tint);
+  border-radius: calc(var(--r2) - 2px) calc(var(--r2) - 2px) 0 0;
+}
+.sheet-bar strong { font-family: var(--font-display); font-weight: 400; font-size: 18px; }
+.chip { display: inline-block; padding: 2px 12px; border-radius: var(--r3); font-size: 14px; font-weight: 600; background: var(--white); border: 1.5px solid var(--ink); }
+.chip.copilot { background: var(--green-tint); }
+.view-toggle { display: flex; gap: var(--s2); }
+.view-toggle button { min-height: 36px; padding: 4px 16px; border: 1.5px solid var(--ink); border-radius: var(--r3); background: var(--white); font-weight: 600; cursor: pointer; }
+.view-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+.sheet-body { padding: var(--s5); flex: 1; }
+@media (max-width: 600px) { .sheet-body { padding: var(--s4) var(--s3); } }
+
+.empty { height: 100%; min-height: 480px; display: grid; place-content: center; justify-items: center; gap: var(--s4); text-align: center; color: var(--muted); }
+.empty p { margin: 0; max-width: 40ch; }
+.empty .lead { color: var(--ink); font-family: var(--font-display); font-size: 22px; }
+.cluster { display: grid; grid-template-columns: repeat(2, 56px); gap: var(--s2); }
+.cluster span { width: 56px; height: 56px; background: var(--c); }
+.cluster span:nth-child(1) { border-radius: 48px 48px 0 48px; }  /* square corner points to the centre */
+.cluster span:nth-child(2) { border-radius: 48px 48px 48px 0; }
+.cluster span:nth-child(3) { border-radius: 48px 0 48px 48px; }
+.cluster span:nth-child(4) { border-radius: 0 48px 48px 48px; }
+
+.working { display: grid; gap: var(--s3); }
+.skeleton { height: 14px; border-radius: var(--r1); background: var(--line); }
+.error-box { background: var(--orange-tint); border: 1.5px solid var(--ink); border-radius: var(--r2); padding: var(--s4); }
+.error-box h2 { font-size: 20px; margin-bottom: var(--s2); }
+.error-box p { margin: 0 0 var(--s3); }
+.error-box .actions, .saved .actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.saved h2 { font-size: 26px; margin-bottom: var(--s2); }
+.saved h3 { font-family: var(--font-text); font-weight: 700; font-size: 17px; margin: var(--s4) 0 var(--s1); }
+.saved p { max-width: 65ch; margin: 0 0 var(--s3); }
+.saved .actions { margin-bottom: var(--s3); }
+.saved audio { display: block; width: 100%; max-width: 520px; margin: 0 0 var(--s3); }
+.warn-box { background: var(--orange-tint); border: 1.5px solid var(--ink); border-radius: var(--r2); padding: var(--s3); margin-bottom: var(--s3); }
+.warn-box p { margin: 0; }
+.warn-box .actions { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s2); }
+.mic-report { border-radius: var(--r2); background: var(--blue-tint); padding: var(--s3); margin: 0 0 var(--s3); font-size: 15px; }
+.mic-report p { margin: 0 0 var(--s1); }
+.mic-report p:last-child { margin-bottom: 0; }
+.mic-report .good { font-weight: 700; }
+.mic-report .bad { font-weight: 700; }
+.mic-report.is-good { background: var(--green-tint); }
+.mic-report.is-bad { background: var(--orange-tint); }
+.meter { height: 10px; border: 1.5px solid var(--ink); border-radius: var(--r3); overflow: hidden; margin-top: var(--s3); background: var(--white); }
+.meter span { display: block; height: 100%; width: 0; background: var(--green); }
+.saved .callout { background: var(--green-tint); border-radius: var(--r2); padding: var(--s3); }
+.saved .callout p { margin: 0 0 var(--s2); }
+
+/* ---------- Minutes document ---------- */
+.draft-note { background: var(--gold-tint); border-radius: var(--r2); padding: var(--s3); margin: 0 0 var(--s4); font-size: 15px; }
+.minutes h1 { font-size: 30px; margin-bottom: var(--s2); }
+.meta { color: var(--muted); margin: 0 0 var(--s4); font-size: 15px; }
+.meta span + span::before { content: "  |  "; white-space: pre; }
+.minutes h2 { font-size: 20px; margin: var(--s4) 0 var(--s2); padding-top: var(--s3); border-top: 1px solid var(--line); }
+.minutes h3 { font-family: var(--font-text); font-weight: 700; font-size: 17px; margin: var(--s3) 0 var(--s1); }
+.minutes p, .minutes ul { margin: 0 0 var(--s2); max-width: 75ch; }
+.minutes ul { padding-left: var(--s4); }
+.minutes li { margin-bottom: var(--s1); }
+.minutes .none { color: var(--muted); }
+.review-box { background: var(--gold-tint); border-radius: var(--r2); padding: var(--s3) var(--s3) var(--s2); }
+.review-box ul { margin: 0; }
+.transcript { white-space: pre-wrap; font-size: 15px; background: var(--blue-tint); border-radius: var(--r2); padding: var(--s3); }
+
+.ed { border-radius: var(--r1); outline-offset: 2px; }
+.ed:hover { box-shadow: 0 0 0 2px var(--line); }
+.ed:focus { outline: 3px solid var(--blue-deep); }
+.ed:empty::before { content: attr(data-ph); color: var(--muted); }
+
+.table-wrap { overflow-x: auto; }
+table.actions { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 520px; }
+table.actions th, table.actions td { text-align: left; vertical-align: top; padding: 8px 12px; border: 1px solid var(--field-border); }
+table.actions th { background: var(--blue-tint); font-weight: 700; }
+table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
+.link-btn { background: none; border: 0; padding: 4px 8px; text-decoration: underline; cursor: pointer; font-size: 14px; }
+.add-row { margin-top: var(--s2); }
+
+#toast { position: fixed; left: 50%; bottom: var(--s4); transform: translateX(-50%); background: var(--ink); color: var(--white); padding: 12px 24px; border-radius: var(--r3); max-width: calc(100vw - 32px); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 10; }
+#toast.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="site-header">
+    <img src="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College">
+    <div class="page-title">Meeting minutes</div>
+  </div>
+  <div class="hue-band" aria-hidden="true"></div>
+</header>
+
+<main class="layout">
+
+  <!-- ================= Sidebar ================= -->
+  <div>
+    <section class="step" aria-labelledby="h-details">
+      <h2 class="step-title" id="h-details"><span class="bubble" style="--c:var(--orange)" aria-hidden="true">1</span>Meeting details</h2>
+
+      <div class="engine">
+        <div class="field" style="margin-bottom:var(--s2)">
+          <label for="modelSelector">AI engine (optional)</label>
+          <select id="modelSelector">
+            <option value="gemini">Gemini 2.5 Flash (Google)</option>
+            <option value="copilot">Microsoft Copilot (Enterprise)</option>
+          </select>
+        </div>
+        <p class="hint" style="margin:0 0 var(--s2)">Signing in is optional. You can record and download without it.</p>
+        <button id="connectBtn" type="button" class="btn btn-block btn-small">Sign in to Gemini</button>
+        <p id="setupWarning" class="setup-warning" role="status" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="category">Meeting type</label>
+        <select id="category">
+          <option>Advisory Board Meeting</option>
+          <option>Faculty Senate</option>
+          <option>Department Review</option>
+          <option>Curriculum Committee</option>
+          <option>Occupational Advisory Meeting</option>
+          <option>Accreditation Planning</option>
+          <option>Professional Development</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field" id="otherField" hidden>
+        <label for="categoryOther">Describe the meeting</label>
+        <input type="text" id="categoryOther" maxlength="100" placeholder="For example: Welding program industry roundtable">
+        <p class="hint">This name appears on the minutes, the information sheet, and the file names.</p>
+      </div>
+      <div class="two-col">
+        <div class="field"><label for="meetingDate">Date</label><input type="date" id="meetingDate"></div>
+        <div class="field"><label for="meetingTime">Start time</label><input type="time" id="meetingTime"></div>
+      </div>
+      <div class="field">
+        <label for="meetingLocation">Location or room</label>
+        <input type="text" id="meetingLocation" placeholder="Room 204, or Zoom">
+      </div>
+      <div class="field">
+        <label for="attendees">Expected attendees <span style="font-weight:400">(optional)</span></label>
+        <textarea id="attendees" placeholder="One per line, with role if you like"></textarea>
+        <p class="hint">Helps the AI spell names correctly. It only lists people it hears.</p>
+      </div>
+      <div class="field">
+        <label for="preparedBy">Prepared by</label>
+        <input type="text" id="preparedBy" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="translationLanguage">Translated copy</label>
+        <select id="translationLanguage">
+          <option value="en">None (English only)</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="zh">Chinese (Simplified)</option>
+          <option value="ja">Japanese</option>
+          <option value="pt">Portuguese</option>
+        </select>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="includeTranscript">
+        <label for="includeTranscript">Include a full transcript at the end of the minutes</label>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="h-record">
+      <h2 class="step-title" id="h-record"><span class="bubble" style="--c:var(--green)" aria-hidden="true">2</span>Record</h2>
+      <div class="check" style="margin-bottom:var(--s3)">
+        <input type="checkbox" id="consent">
+        <label for="consent">Everyone present has been told this meeting is being recorded.</label>
+      </div>
+      <div class="field">
+        <label for="micSelect">Microphone</label>
+        <select id="micSelect"><option value="">Default microphone</option></select>
+        <p class="hint">Run the microphone check before an important meeting. It takes about 10 seconds.</p>
+      </div>
+      <button id="micCheckBtn" type="button" class="btn btn-small btn-block" style="margin-bottom:var(--s3)">Check microphone</button>
+      <div id="micReport" class="mic-report" role="status" aria-live="polite" hidden></div>
+      <button id="recordBtn" type="button" class="btn btn-primary btn-block">Start recording</button>
+      <div class="btn-row">
+        <button id="pauseBtn" type="button" class="btn" disabled>Pause</button>
+        <button id="stopBtn" type="button" class="btn btn-dark" disabled>Stop and write minutes</button>
+      </div>
+      <div id="recStatus" class="rec-status" role="status" aria-live="polite">
+        <span class="rec-dot" aria-hidden="true"></span>
+        <span id="recLabel">Ready</span>
+        <output id="timer">00:00</output>
+      </div>
+      <div class="meter" aria-hidden="true"><span id="meterFill"></span></div>
+      <p class="hint" id="micWarn" role="alert" hidden>No sound is reaching the recorder. Choose Check microphone to find the cause.</p>
+      <p class="hint">The green bar moves when sound is picked up.</p>
+    </section>
+
+    <section class="step" aria-labelledby="h-export">
+      <h2 class="step-title" id="h-export"><span class="bubble" style="--c:var(--blue)" aria-hidden="true">3</span>Export</h2>
+      <div class="stack">
+        <button id="pkgBtn" type="button" class="btn btn-primary btn-block" disabled>Download recording package (.zip)</button>
+        <button id="audioBtn" type="button" class="btn btn-block" disabled>Download audio only</button>
+        <button id="docxBtn" type="button" class="btn btn-block" disabled>Download minutes (.docx)</button>
+      </div>
+      <p class="hint">The package holds the audio and a meeting information sheet on LWTC letterhead. The sheet uses the details in the form at the moment you download.</p>
+    </section>
+  </div>
+
+  <!-- ================= Canvas ================= -->
+  <section class="sheet" aria-labelledby="sheetTitle">
+    <div class="sheet-bar">
+      <div style="display:flex;align-items:center;gap:var(--s3)">
+        <strong id="sheetTitle">Minutes</strong>
+        <span id="aiBadge" class="chip">Gemini</span>
+      </div>
+      <div id="viewToggle" class="view-toggle" hidden></div>
+    </div>
+    <div class="sheet-body" id="canvas" aria-live="polite">
+      <div id="emptyState" class="empty">
+        <div class="cluster" aria-hidden="true">
+          <span style="--c:var(--orange)"></span><span style="--c:var(--green)"></span>
+          <span style="--c:var(--gold)"></span><span style="--c:var(--blue)"></span>
+        </div>
+        <p class="lead">Your minutes will appear here</p>
+        <p>Fill in the meeting details and start recording. When you stop, you can download the audio with a meeting information sheet. Sign in to the AI engine if you also want it to write draft minutes.</p>
+      </div>
+      <div id="outputArea" hidden></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   OAuth popup landing: if this page was opened by sign-in, hand
+   the token to the opener and close. Nothing else runs.
+   ============================================================ */
+const hp = new URLSearchParams(location.hash.slice(1));
+if ((hp.get('access_token') || hp.get('error')) && (window.opener || window.name === 'lwtc_oauth')) {
+  const msg = {
+    type: 'lwtc-oauth',
+    token: hp.get('access_token'),
+    error: hp.get('error_description') || hp.get('error'),
+    state: hp.get('state'),
+    expiresIn: parseInt(hp.get('expires_in') || '3600', 10)
+  };
+  try { if ('BroadcastChannel' in window) { const bc = new BroadcastChannel('lwtc-oauth'); bc.postMessage(msg); bc.close(); } } catch (e) {}
+  try { if (window.opener) window.opener.postMessage(msg, location.origin); } catch (e) {}
+  history.replaceState(null, '', location.pathname + location.search);
+  document.body.textContent = 'Signed in. You can close this window.';
+  setTimeout(() => window.close(), 200);
+  return;
+}
+
+/* ============================================================
+   ADMIN CONFIGURATION: set once per deployment.
+   These identify LWTC's app registrations, not the person signing in.
+   ============================================================ */
+const CONFIG = {
+  gemini: {
+    label: 'Gemini',
+    clientId: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+    // Verify against Google's current OAuth guidance for the Gemini API
+    // (the docs list generative-language.retriever and cloud-platform).
+    scopes: ['https://www.googleapis.com/auth/generative-language'],
+    authEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    apiBase: 'https://generativelanguage.googleapis.com/v1beta/models/',
+    model: 'gemini-2.5-flash'
+  },
+  copilot: {
+    label: 'Copilot',
+    clientId: 'YOUR_AZURE_CLIENT_ID',
+    tenantId: '59943c4a-6253-4d0d-8a98-fef50303d34b',
+    scopes: ['https://graph.microsoft.com/.default'],
+    authEndpoint: 'https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize',
+    // Chat-completions-style endpoint served by your own gateway. Leave empty until one exists.
+    endpoint: ''
+  }
+};
+const REDIRECT_URI = location.origin + location.pathname;
+
+// Letterhead for downloaded documents. Fill in the contact details once; blank lines are left out.
+// Host a copy of the logo on the same site as this page if the Word letterhead falls back to text,
+// because the brand site may not allow other pages to read its files.
+const LETTERHEAD = { name: 'Lorenzo Walker Technical College', address: '', phone: '', web: '' };
+const LOGO_PNG = 'https://lwtc-brandguide.lwtc.app/assets/logos/png/lwtc-logo.png';
+const MAX_REQUEST_BYTES = 19.5 * 1024 * 1024;   // Gemini inline request limit is about 20 MB
+const SILENT_LEVEL = 0.02;                     // peak below this for a whole recording = treated as silent
+const AUDIO_BITRATE = 24000;                    // voice-grade; keeps ~75 min under the limit
+
+const EN_LABELS = {
+  date: 'Date', time: 'Time', location: 'Location', preparedBy: 'Prepared by',
+  summary: 'Summary', attendees: 'Attendees', discussion: 'Discussion', decisions: 'Decisions',
+  actions: 'Action items', task: 'Task', owner: 'Owner', due: 'Due',
+  unclear: 'Needs review', transcript: 'Transcript',
+  approvedBy: 'Reviewed and approved by', approvedOn: 'Date approved',
+  draftNote: 'Draft prepared with AI assistance from a recording.'
+};
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const el = {
+  model: $('modelSelector'), connect: $('connectBtn'), warn: $('setupWarning'),
+  record: $('recordBtn'), pkg: $('pkgBtn'), micSel: $('micSelect'), micCheck: $('micCheckBtn'), micReport: $('micReport'), meterFill: $('meterFill'), micWarn: $('micWarn'), pause: $('pauseBtn'), stop: $('stopBtn'),
+  recStatus: $('recStatus'), recLabel: $('recLabel'), timer: $('timer'),
+  consent: $('consent'), docx: $('docxBtn'), audio: $('audioBtn'),
+  empty: $('emptyState'), out: $('outputArea'), badge: $('aiBadge'), toggle: $('viewToggle'),
+  toast: $('toast')
+};
+
+function h(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v === false || v == null) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else e.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null) e.append(kid);
+  return e;
+}
+let toastTimer;
+function toast(msg) {
+  el.toast.textContent = msg; el.toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.toast.classList.remove('show'), 4500);
+}
+const pad = n => String(n).padStart(2, '0');
+const fmtClock = ms => { const s = Math.floor(ms / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
+function fmtDate(iso) {
+  if (!iso) return 'Not specified';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { dateStyle: 'long' });
+}
+function fmtTime(v) {
+  if (!v) return 'Not specified';
+  return new Date(`1970-01-01T${v}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+function setPath(obj, path, value) {
+  const keys = path.split('.'); let o = obj;
+  for (let i = 0; i < keys.length - 1; i++) o = o[keys[i]];
+  o[keys[keys.length - 1]] = value;
+}
+
+/* ---------- Canvas context (only present if the page runs inside Canvas itself) ---------- */
+let ENV = null;
+try { ENV = window.ENV || window.parent.ENV || null; } catch (e) { /* cross-origin iframe */ }
+const canvasUser = ENV && ENV.current_user ? ENV.current_user.display_name : (ENV && ENV.USER_NAME) || '';
+const courseId = (ENV && (ENV.COURSE_ID || ENV.course_id)) || '';
+
+/* ============================================================
+   Tokens + sign-in
+   ============================================================ */
+const tokens = {
+  mem: {},
+  set(p, tok, sec) {
+    const rec = { tok, exp: Date.now() + (sec || 3600) * 1000 };
+    this.mem[p] = rec;
+    try { sessionStorage.setItem('lwtc_' + p, JSON.stringify(rec)); } catch (e) {}
+  },
+  get(p) {
+    let rec = this.mem[p];
+    if (!rec) { try { rec = JSON.parse(sessionStorage.getItem('lwtc_' + p) || 'null'); } catch (e) {} if (rec) this.mem[p] = rec; }
+    if (!rec) return null;
+    if (Date.now() > rec.exp - 30000) { this.clear(p); return null; }
+    return rec.tok;
+  },
+  clear(p) { delete this.mem[p]; try { sessionStorage.removeItem('lwtc_' + p); } catch (e) {} }
+};
+const isConfigured = p => {
+  const c = CONFIG[p];
+  return !!c.clientId && !c.clientId.startsWith('YOUR_') && (p !== 'copilot' || !!c.endpoint);
+};
+
+let provider = 'gemini';
+let pendingAuth = null;
+
+function startSignIn() {
+  if (!isConfigured(provider)) { toast('Sign-in is not set up yet. Ask your administrator to add the OAuth client ID.'); return; }
+  const c = CONFIG[provider];
+  const state = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+  pendingAuth = { provider, state };
+  const params = new URLSearchParams({
+    client_id: c.clientId, redirect_uri: REDIRECT_URI, response_type: 'token',
+    scope: c.scopes.join(' '), state
+  });
+  if (provider === 'gemini') params.set('prompt', 'select_account');
+  const base = c.authEndpoint.replace('{tenant}', c.tenantId || 'common');
+  const w = window.open(`${base}?${params}`, 'lwtc_oauth', 'width=500,height=640');
+  if (!w) toast('The sign-in window was blocked. Allow pop-ups for this page and try again.');
+}
+function onAuthMessage(d) {
+  if (!d || d.type !== 'lwtc-oauth' || !pendingAuth || d.state !== pendingAuth.state) return;
+  const p = pendingAuth.provider; pendingAuth = null;
+  if (d.error || !d.token) { toast('Sign-in did not finish: ' + (d.error || 'no token returned')); return; }
+  tokens.set(p, d.token, d.expiresIn);
+  refreshAuthUI(); toast(`Signed in to ${CONFIG[p].label}.`);
+}
+window.addEventListener('message', e => { if (e.origin === location.origin) onAuthMessage(e.data); });
+try { if ('BroadcastChannel' in window) new BroadcastChannel('lwtc-oauth').onmessage = e => onAuthMessage(e.data); } catch (e) {}
+
+function refreshAuthUI() {
+  const signedIn = !!tokens.get(provider);
+  el.connect.textContent = signedIn ? `Signed in to ${CONFIG[provider].label}. Sign out` : `Sign in to ${CONFIG[provider].label}`;
+  if (!isConfigured(provider)) {
+    el.warn.hidden = false;
+    el.warn.textContent = (provider === 'copilot' && !CONFIG.copilot.endpoint
+      ? 'Admin setup needed: Copilot also needs a gateway endpoint.'
+      : `Admin setup needed: no ${provider === 'gemini' ? 'Google' : 'Microsoft'} client ID is configured.`)
+      + ' Recording and downloads still work.';
+  } else el.warn.hidden = true;
+  if (canvasMode === 'saved' && rec.blob) showSaved();
+}
+el.connect.addEventListener('click', () => {
+  if (tokens.get(provider)) { tokens.clear(provider); refreshAuthUI(); } else startSignIn();
+});
+el.model.addEventListener('change', () => {
+  provider = el.model.value;
+  el.badge.textContent = CONFIG[provider].label;
+  el.badge.classList.toggle('copilot', provider === 'copilot');
+  refreshAuthUI();
+});
+
+/* ============================================================
+   Recording
+   ============================================================ */
+const rec = { recorder: null, stream: null, chunks: [], blob: null, mime: '', elapsed: 0, duration: 0, startedAt: null, saved: false, silent: false, previewUrl: null, last: 0, tick: null, state: 'idle' };
+let canvasMode = 'empty';
+let minutes = null;      // { en: {...}, tr?: {...} }
+let view = 'en';
+let exported = true;
+
+const mic = { ctx: null, analyser: null, timer: null, peak: 0, warned: false, on: false };
+async function listMics() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId && !['default', 'communications'].includes(d.deviceId));
+    const keep = el.micSel.value;
+    el.micSel.replaceChildren(h('option', { value: '', text: 'Default microphone' }),
+      ...devs.map((d, i) => h('option', { value: d.deviceId, text: d.label || `Microphone ${i + 1}` })));
+    if ([...el.micSel.options].some(o => o.value === keep)) el.micSel.value = keep;
+  } catch (e) { /* the list is a convenience */ }
+}
+// Echo cancellation and noise suppression are built for video calls. For recording a room they can
+// remove quiet speech, steady sounds, or (on some devices) everything, so the default keeps them off.
+const MIC_MODES = {
+  room: { label: 'Meeting-room mode', c: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } },
+  raw: { label: 'Basic mode', c: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+  standard: { label: 'Call mode', c: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }
+};
+let micMode = 'room';
+async function openMicWith(constraints, id) {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: id ? { ...constraints, deviceId: { exact: id } } : constraints });
+  } catch (e) {
+    if (id && (e.name === 'OverconstrainedError' || e.name === 'NotFoundError')) {
+      toast('That microphone is not available, so the default microphone is being used.');
+      el.micSel.value = '';
+      return await navigator.mediaDevices.getUserMedia({ audio: constraints });
+    }
+    throw e;
+  }
+}
+const openMic = () => openMicWith(MIC_MODES[micMode].c, el.micSel.value);
+function startMeter(stream) {
+  mic.peak = 0; mic.warned = false; mic.on = false; el.micWarn.hidden = true;
+  try {
+    mic.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (mic.ctx.resume) mic.ctx.resume();
+    mic.analyser = mic.ctx.createAnalyser(); mic.analyser.fftSize = 1024;
+    mic.ctx.createMediaStreamSource(stream).connect(mic.analyser);
+    mic.on = true;
+    const buf = new Uint8Array(mic.analyser.fftSize);
+    mic.timer = setInterval(() => {
+      mic.analyser.getByteTimeDomainData(buf);
+      let p = 0; for (const v of buf) { const d = Math.abs(v - 128) / 128; if (d > p) p = d; }
+      el.meterFill.style.width = Math.min(100, Math.round(p * 220)) + '%';
+      if (rec.state === 'recording') {
+        if (p > mic.peak) mic.peak = p;
+        if (mic.peak >= SILENT_LEVEL) el.micWarn.hidden = true;
+        else if (!mic.warned && rec.elapsed > 8000) {
+          mic.warned = true;
+          const tr = stream.getAudioTracks()[0];
+          el.micWarn.textContent = `No sound is reaching the recorder from "${(tr && tr.label) || 'the microphone'}"${tr && tr.muted ? ', and the system reports it as muted' : ''}. Choose Check microphone to find the cause.`;
+          el.micWarn.hidden = false;
+        }
+      }
+    }, 100);
+  } catch (e) { /* the meter is optional; recording continues without it */ }
+}
+function stopMeter() {
+  clearInterval(mic.timer); el.meterFill.style.width = '0';
+  try { if (mic.ctx) mic.ctx.close(); } catch (e) {}
+  mic.ctx = null; mic.analyser = null;
+}
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', listMics);
+
+function explainMicError(e) {
+  const inFrame = window.self !== window.top;
+  if (e && e.name === 'NotAllowedError') {
+    return 'The browser blocked microphone access. Click the lock icon beside the address bar, set Microphone to Allow, and reload.'
+      + (inFrame ? ' This page is inside another page (such as Canvas), and that page must also allow the microphone.' : '');
+  }
+  if (e && e.name === 'NotFoundError') return 'No microphone was found. Connect one, or check that it is enabled in your system sound settings.';
+  if (e && e.name === 'NotReadableError') return 'The microphone could not be started. Another app (Teams, Zoom, Webex) may be using it, or your system is blocking access. Close those apps and check your system microphone privacy settings.';
+  return 'The microphone could not be opened: ' + ((e && (e.message || e.name)) || 'unknown error') + '.';
+}
+function probeLevel(stream, ms) {
+  return new Promise(resolve => {
+    let ctx, peak = 0;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.resume) ctx.resume();
+      const an = ctx.createAnalyser(); an.fftSize = 1024;
+      ctx.createMediaStreamSource(stream).connect(an);
+      const buf = new Uint8Array(an.fftSize), t0 = performance.now();
+      const iv = setInterval(() => {
+        an.getByteTimeDomainData(buf);
+        let p = 0; for (const v of buf) { const d = Math.abs(v - 128) / 128; if (d > p) p = d; }
+        if (p > peak) peak = p;
+        el.meterFill.style.width = Math.min(100, Math.round(p * 220)) + '%';
+        if (performance.now() - t0 >= ms) { clearInterval(iv); el.meterFill.style.width = '0'; try { ctx.close(); } catch (e) {} resolve({ peak }); }
+      }, 50);
+    } catch (e) { resolve({ peak: 0, error: e }); }
+  });
+}
+function renderReport(lines, outcome) {
+  el.micReport.hidden = false;
+  el.micReport.className = 'mic-report' + (outcome ? ' is-' + outcome : '');
+  el.micReport.replaceChildren(...lines.map(([t, cls]) => h('p', { class: cls || '', text: t })));
+}
+async function runMicCheck() {
+  if (rec.state === 'recording' || rec.state === 'paused') { toast('Stop the recording before checking the microphone.'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { renderReport([['This browser cannot use the microphone. Use a current version of Chrome, Edge, Firefox or Safari.', 'bad']], 'bad'); return; }
+  el.micCheck.disabled = true; el.record.disabled = true;
+  const lines = [], say = (t, cls) => { lines.push([t, cls]); renderReport(lines); };
+  const heard = r => r.peak >= SILENT_LEVEL;
+  try {
+    say('Checking. Please say "testing, one, two, three" until this finishes.');
+    try { (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach(t => t.stop()); }
+    catch (e) { lines.length = 0; say(explainMicError(e), 'bad'); renderReport(lines, 'bad'); return; }
+    await listMics();
+    for (const key of ['room', 'raw', 'standard']) {
+      let stream;
+      try { stream = await openMicWith(MIC_MODES[key].c, el.micSel.value); }
+      catch (e) { say(`${MIC_MODES[key].label}: could not start. ${explainMicError(e)}`); continue; }
+      const tr = stream.getAudioTracks()[0];
+      const r = await probeLevel(stream, 3000);
+      stream.getTracks().forEach(t => t.stop());
+      const name = (tr && tr.label) || 'the default microphone';
+      if (heard(r)) {
+        micMode = key;
+        say(`${MIC_MODES[key].label}: sound detected from ${name}.`);
+        say(`The microphone is working. Recordings will use ${MIC_MODES[key].label}.`, 'good');
+        renderReport(lines, 'good'); return;
+      }
+      say(`${MIC_MODES[key].label}: no sound from ${name}${tr && tr.muted ? ' (the system reports it as muted)' : ''}.`);
+    }
+    const others = [...el.micSel.options].filter(o => o.value);
+    for (const o of others) {
+      say(`Trying ${o.text}…`);
+      try {
+        const stream = await openMicWith(MIC_MODES.raw.c, o.value);
+        const r = await probeLevel(stream, 2500); stream.getTracks().forEach(t => t.stop());
+        if (heard(r)) {
+          el.micSel.value = o.value; micMode = 'raw';
+          say(`Sound found on ${o.text}. It is now selected and recordings will use it.`, 'good');
+          renderReport(lines, 'good'); return;
+        }
+        say(`No sound from ${o.text}.`);
+      } catch (e) { say(`${o.text} could not be opened.`); }
+    }
+    say('No sound reached the browser from any microphone. This points to the computer, not this page. Check these, then run the check again:', 'bad');
+    [
+      'Windows: Settings > Privacy & security > Microphone. Turn on Microphone access and "Let desktop apps access your microphone".',
+      'Mac: System Settings > Privacy & Security > Microphone. Turn on your browser.',
+      'Windows: Settings > System > Sound > Input. Choose the microphone, speak, and watch the level bar there. If it does not move, the device or its driver is the problem.',
+      'Close other apps that may hold the microphone (Teams, Zoom, Webex) and check for a mute switch on the device.',
+      'In the browser, click the lock icon beside the address bar and make sure Microphone is set to Allow.'
+    ].forEach(t => say(t));
+    renderReport(lines, 'bad');
+  } finally { el.micCheck.disabled = false; el.record.disabled = rec.state !== 'idle' && rec.state !== 'saved' && rec.state !== 'done'; }
+}
+el.micCheck.addEventListener('click', runMicCheck);
+
+function pickMime() {
+  // WebM/Opus first: Chrome and Edge also offer audio/mp4, but their MP4 output is fragmented and often plays as empty.
+  // MP4 stays last for Safari, which has no other option.
+  const opts = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm', 'audio/mp4'];
+  return opts.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+function setRecUI(s) {
+  rec.state = s;
+  const live = s === 'recording', paused = s === 'paused', busy = s === 'processing' || s === 'stopping';
+  el.record.disabled = live || paused || busy;
+  el.pause.disabled = !(live || paused);
+  el.stop.disabled = !(live || paused);
+  el.pause.textContent = paused ? 'Resume' : 'Pause';
+  el.recStatus.className = 'rec-status' + (live ? ' live' : paused ? ' paused' : '');
+  el.recLabel.textContent = { idle: 'Ready', recording: 'Recording', paused: 'Paused', stopping: 'Saving recording…', processing: 'Writing minutes…', saved: 'Recording saved', done: 'Finished' }[s];
+  el.audio.disabled = !rec.blob || busy;
+  el.pkg.disabled = !rec.blob || busy;
+}
+function tickTimer() {
+  if (rec.state !== 'recording') return;
+  const now = Date.now(); rec.elapsed += now - rec.last; rec.last = now;
+  el.timer.textContent = fmtClock(rec.elapsed);
+  if (rec.elapsed > 75 * 60 * 1000 && !tickTimer.warned) { tickTimer.warned = true; toast('This recording is near the size limit for one request. Consider stopping and starting a new one.'); }
+}
+el.record.addEventListener('click', async () => {
+  if (rec.blob && !rec.saved && !confirm('Starting a new recording will replace the current one, which has not been downloaded. Start anyway?')) return;
+  if (!el.consent.checked) { toast('Confirm that everyone present knows the meeting is being recorded.'); el.consent.focus(); return; }
+  try {
+    rec.stream = await openMic();
+  } catch (e) {
+    toast(e.name === 'NotFoundError' ? 'No microphone was found. Connect one and try again.' : 'Microphone access is blocked. Allow it in your browser settings and try again.');
+    return;
+  }
+  listMics(); startMeter(rec.stream);
+  if (rec.previewUrl) { URL.revokeObjectURL(rec.previewUrl); rec.previewUrl = null; }
+  const mime = pickMime();
+  const opts = { audioBitsPerSecond: AUDIO_BITRATE }; if (mime) opts.mimeType = mime;
+  rec.recorder = new MediaRecorder(rec.stream, opts);
+  rec.chunks = []; rec.blob = null; rec.elapsed = 0; rec.duration = 0; rec.saved = false; rec.startedAt = new Date(); tickTimer.warned = false;
+  canvasMode = 'empty'; el.out.hidden = true; el.empty.hidden = false;
+  minutes = null; view = 'en'; exported = true; el.docx.disabled = true; el.toggle.hidden = true;
+  rec.recorder.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+  rec.recorder.onstop = () => {
+    rec.stream.getTracks().forEach(t => t.stop());           // release the microphone
+    stopMeter();
+    rec.mime = rec.recorder.mimeType || mime || 'audio/webm';
+    rec.blob = new Blob(rec.chunks, { type: rec.mime });
+    rec.duration = rec.elapsed;
+    rec.silent = mic.on && mic.peak < SILENT_LEVEL;   // only judge silence if the meter was running
+    if (rec.blob.size < 2000) {
+      rec.blob = null; setRecUI('idle');
+      toast('No audio was captured. Check that the right microphone is selected and try again.');
+      el.out.hidden = true; el.empty.hidden = false; canvasMode = 'empty';
+      return;
+    }
+    if (!rec.silent && tokens.get(provider) && isConfigured(provider)) processMinutes();
+    else { setRecUI('saved'); showSaved(); }
+  };
+  rec.recorder.start(10000);
+  rec.last = Date.now(); el.timer.textContent = '00:00';
+  clearInterval(rec.tick); rec.tick = setInterval(tickTimer, 500);
+  setRecUI('recording');
+});
+el.pause.addEventListener('click', () => {
+  if (rec.state === 'recording') { tickTimer(); rec.recorder.pause(); setRecUI('paused'); }
+  else if (rec.state === 'paused') { rec.recorder.resume(); rec.last = Date.now(); setRecUI('recording'); }
+});
+el.stop.addEventListener('click', () => {
+  clearInterval(rec.tick); tickTimer();
+  if (rec.state === 'paused') rec.recorder.resume();
+  setRecUI('stopping');
+  rec.recorder.stop();
+});
+window.addEventListener('beforeunload', e => {
+  if (rec.state === 'recording' || rec.state === 'paused' || (rec.blob && !rec.saved) || (minutes && !exported)) { e.preventDefault(); e.returnValue = ''; }
+});
+
+const audioExt = m => /ogg/.test(m) ? 'ogg' : /mp4/.test(m) ? 'm4a' : /wav/.test(m) ? 'wav' : 'webm';
+function packageNames(meta) {
+  const base = `LWTC_${slug(meta.category)}_${meta.dateISO || new Date().toISOString().slice(0, 10)}`;
+  return { audio: `${base}_recording.${audioExt(rec.mime)}`, info: `${base}_meeting-info.docx`, minutes: `${base}_minutes.docx`, zip: `${base}_recording-package.zip` };
+}
+function downloadAudio() {
+  if (!rec.blob) return;
+  download(rec.blob, packageNames(getMeta()).audio);
+  rec.saved = true;
+}
+el.audio.addEventListener('click', downloadAudio);
+el.pkg.addEventListener('click', () => downloadPackage());
+
+/* ============================================================
+   AI calls
+   ============================================================ */
+async function callGemini(parts, system) {
+  const c = CONFIG.gemini, token = tokens.get('gemini');
+  if (!token) throw new Error('Your Gemini sign-in has expired. Sign in again, then choose Try again.');
+  const res = await fetch(`${c.apiBase}${c.model}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
+    })
+  });
+  if (res.status === 401 || res.status === 403) {
+    tokens.clear('gemini'); refreshAuthUI();
+    throw new Error('Gemini rejected the sign-in (expired, or this account lacks access). Sign in again, then choose Try again.');
+  }
+  if (!res.ok) {
+    let msg = ''; try { msg = (await res.json()).error.message; } catch (e) {}
+    throw new Error(msg || `Gemini returned status ${res.status}.`);
+  }
+  const data = await res.json();
+  const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  if (!text) throw new Error(data.promptFeedback?.blockReason ? 'The request was blocked by the AI safety filter.' : 'The AI returned an empty response.');
+  return text;
+}
+async function callCopilot(parts, system) {
+  if (parts.some(p => p.inlineData)) {
+    throw new Error('The Copilot route cannot take a recording directly. Choose Gemini, or ask your administrator to add a transcription step to the Copilot gateway.');
+  }
+  const token = tokens.get('copilot');
+  if (!token) throw new Error('Your Copilot sign-in has expired. Sign in again.');
+  const res = await fetch(CONFIG.copilot.endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ messages: [{ role: 'system', content: system }, { role: 'user', content: parts.map(p => p.text).join('\n') }] })
+  });
+  if (!res.ok) throw new Error(`The Copilot gateway returned status ${res.status}.`);
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error('The Copilot gateway returned an empty response.');
+  return text;
+}
+const callModel = (parts, system) => (provider === 'gemini' ? callGemini : callCopilot)(parts, system);
+
+function parseJSON(text) {
+  const clean = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { return JSON.parse(clean); }
+  catch (e) { throw new Error('The AI reply was not in the expected format. Choose Try again.'); }
+}
+function normalize(m) {
+  const arr = v => Array.isArray(v) ? v : [];
+  const str = v => typeof v === 'string' ? v : (v == null ? '' : String(v));
+  return {
+    title: str(m.title), labels: Object.assign({}, EN_LABELS, m.labels || {}),
+    summary: str(m.summary), attendees: arr(m.attendees).map(str),
+    discussion: arr(m.discussion).map(d => ({ topic: str(d && d.topic), points: arr(d && d.points).map(str) })),
+    decisions: arr(m.decisions).map(str),
+    actionItems: arr(m.actionItems).map(a => ({ task: str(a && a.task), owner: str(a && a.owner) || 'Not stated', due: str(a && a.due) || 'Not stated' })),
+    unclear: arr(m.unclear).map(str), transcript: str(m.transcript)
+  };
+}
+function meetingName() {
+  const v = $('category').value;
+  return v === 'Other' ? ($('categoryOther').value.trim() || 'Other meeting') : v;
+}
+$('category').addEventListener('change', () => {
+  const other = $('category').value === 'Other';
+  $('otherField').hidden = !other;
+  if (other) $('categoryOther').focus();
+});
+function getMeta() {
+  const sel = $('translationLanguage');
+  return {
+    category: meetingName(), dateISO: $('meetingDate').value, date: fmtDate($('meetingDate').value),
+    time: fmtTime($('meetingTime').value), location: $('meetingLocation').value.trim() || 'Not specified',
+    attendees: $('attendees').value.trim(), preparedBy: $('preparedBy').value.trim(),
+    langCode: sel.value, langName: sel.options[sel.selectedIndex].text, transcript: $('includeTranscript').checked
+  };
+}
+const blobToBase64 = blob => new Promise((res, rej) => {
+  const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Could not read the recording.')); r.readAsDataURL(blob);
+});
+
+const SYSTEM_MINUTES =
+  'You are the recording secretary for Lorenzo Walker Technical College. Write formal meeting minutes in a professional academic tone, strictly from the audio provided. ' +
+  'Never invent content: do not add attendees, topics, decisions, owners or dates that were not said. ' +
+  'If audio is unclear, inaudible or silent, list it under "unclear" instead of guessing. ' +
+  'If there is no meeting speech, return empty lists and a summary stating that no discussion was captured. Reply with one JSON object and nothing else.';
+
+async function generateMinutes(meta, base64, mime) {
+  const prompt =
+`Meeting context supplied by the note taker (use for labelling only, not as evidence of what was discussed):
+- Type: ${meta.category}
+- Date: ${meta.date}
+- Time: ${meta.time}
+- Location: ${meta.location}
+- Expected attendees (use only to spell names correctly): ${meta.attendees ? meta.attendees.replace(/\n/g, '; ') : 'Not provided'}
+
+Return JSON with exactly these keys:
+{
+  "summary": "2-4 sentence overview of what the meeting covered",
+  "attendees": ["people who spoke or were named as present"],
+  "discussion": [{"topic": "short heading", "points": ["key point", "..."]}],
+  "decisions": ["decision made, with any vote or condition stated"],
+  "actionItems": [{"task": "", "owner": "name, or Not stated", "due": "date, or Not stated"}],
+  "unclear": ["mm:ss or description of passages that were hard to hear"],
+  "transcript": ${meta.transcript ? '"clean transcript, one speaker turn per line, labelled by name if stated or Speaker 1, Speaker 2, with a [mm:ss] marker every few turns"' : '""'}
+}`;
+  const raw = await callModel([{ inlineData: { mimeType: mime, data: base64 } }, { text: prompt }], SYSTEM_MINUTES);
+  const m = normalize(parseJSON(raw));
+  m.title = meta.category;
+  return m;
+}
+async function translateMinutes(en, meta) {
+  const payload = { title: en.title, labels: en.labels, summary: en.summary, attendees: en.attendees, discussion: en.discussion, decisions: en.decisions, actionItems: en.actionItems, unclear: en.unclear, transcript: en.transcript };
+  const system = `You are a professional translator for a college. Translate faithfully into ${meta.langName}. Keep the JSON structure and keys exactly; translate only string values. Keep personal names, numbers and dates accurate. Reply with JSON only.`;
+  const raw = await callModel([{ text: JSON.stringify(payload) }], system);
+  return normalize(parseJSON(raw));
+}
+
+async function processMinutes() {
+  showWorking('Preparing the recording…');
+  const meta = getMeta();
+  try {
+    if (rec.blob.size < 2000) throw new Error('No audio was captured. Check that the right microphone is selected and try recording again.');
+    if (rec.blob.size * 1.34 > MAX_REQUEST_BYTES) {
+      throw new Error(`This recording (${(rec.blob.size / 1048576).toFixed(1)} MB) is too large to send in one request. Download the audio and split it into shorter parts.`);
+    }
+    const base64 = await blobToBase64(rec.blob);
+    showWorking('Writing the minutes…');
+    const en = await generateMinutes(meta, base64, rec.mime.split(';')[0]);
+    minutes = { en };
+    if (meta.langCode !== 'en') {
+      showWorking(`Translating to ${meta.langName}…`);
+      try { minutes.tr = await translateMinutes(en, meta); minutes.trName = meta.langName; }
+      catch (e) { toast('The translation failed. The English minutes are ready.'); }
+    }
+    view = 'en'; exported = false;
+    renderMinutes(meta);
+    el.docx.disabled = false;
+    setRecUI('done');
+  } catch (err) {
+    showError(err.message || String(err));
+    setRecUI('saved');
+  }
+}
+
+/* ============================================================
+   Rendering (text is set with textContent, never innerHTML)
+   ============================================================ */
+function showWorking(msg) {
+  canvasMode = 'working';
+  el.empty.hidden = true; el.out.hidden = false;
+  el.out.replaceChildren(h('div', { class: 'working' },
+    h('p', { text: msg, style: 'font-weight:600;margin:0' }),
+    h('div', { class: 'skeleton', style: 'width:75%' }), h('div', { class: 'skeleton' }), h('div', { class: 'skeleton', style: 'width:83%' })));
+}
+function showError(message) {
+  canvasMode = 'error';
+  el.empty.hidden = true; el.out.hidden = false;
+  el.out.replaceChildren(h('div', { class: 'error-box', role: 'alert' },
+    h('h2', { text: 'The minutes could not be written' }),
+    h('p', { text: message }),
+    h('div', { class: 'actions' },
+      rec.blob ? h('button', { class: 'btn btn-primary', type: 'button', onclick: () => { setRecUI('processing'); processMinutes(); } , text: 'Try again' }) : null,
+      rec.blob ? h('button', { class: 'btn', type: 'button', onclick: () => downloadPackage(), text: 'Download recording package' }) : null)));
+}
+function showSaved() {
+  canvasMode = 'saved';
+  const meta = getMeta(), signedIn = !!tokens.get(provider), configured = isConfigured(provider);
+  let ai;
+  if (!configured) {
+    ai = h('p', { text: 'Automatic minutes are not available yet because the AI engine has not been connected. Your recording and meeting details are safe to download and keep.' });
+  } else if (signedIn) {
+    ai = [h('p', { text: `You are signed in to ${CONFIG[provider].label}. The AI can write draft minutes from this recording now.` }),
+      h('button', { class: 'btn btn-dark', type: 'button', text: 'Write minutes now', onclick: () => { setRecUI('processing'); processMinutes(); } })];
+  } else {
+    ai = [h('p', { text: 'To have the AI write draft minutes, sign in to the AI engine. Your recording stays on this page while you sign in.' }),
+      h('button', { class: 'btn btn-dark', type: 'button', text: `Sign in to ${CONFIG[provider].label}`, onclick: startSignIn })];
+  }
+  el.empty.hidden = true; el.out.hidden = false;
+  el.out.replaceChildren(h('div', { class: 'saved' },
+    h('h2', { text: 'Recording saved' }),
+    rec.silent ? h('div', { class: 'warn-box', role: 'alert' },
+      h('p', { text: 'This recording looks silent. No sound was picked up by the microphone, so the AI was not run. Play it below to check. If it is silent, run the microphone check and record again.' }),
+      h('div', { class: 'actions' }, h('button', { class: 'btn btn-small', type: 'button', text: 'Check microphone', onclick: () => { el.micCheck.scrollIntoView({ block: 'center' }); runMicCheck(); } }))) : null,
+    h('p', { text: `${fmtClock(rec.duration)} of audio (${(rec.blob.size / 1048576).toFixed(1)} MB) for the ${meta.category} on ${meta.date}.` }),
+    h('audio', { controls: true, src: (rec.previewUrl = rec.previewUrl || URL.createObjectURL(rec.blob)), 'aria-label': 'Play back the recording' }),
+    h('p', { text: 'Download the package now. It holds the audio file and a meeting information sheet on LWTC letterhead.' }),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn btn-primary', type: 'button', text: 'Download recording package', onclick: () => downloadPackage() }),
+      h('button', { class: 'btn', type: 'button', text: 'Download audio only', onclick: downloadAudio })),
+    h('div', { class: 'callout' }, h('h3', { text: 'Minutes are optional', style: 'margin-top:0' }), ai)));
+}
+function ed(tag, path, text, ph, cls) {
+  const e = h(tag, { class: 'ed ' + (cls || ''), contenteditable: 'true', 'data-path': path, 'data-ph': ph || '' });
+  e.textContent = text; return e;
+}
+function renderMinutes(meta) {
+  canvasMode = 'minutes';
+  meta = meta || getMeta();
+  const m = minutes[view]; const L = m.labels;
+  const root = h('article', { class: 'minutes' });
+  const parts = [
+    h('p', { class: 'draft-note', text: 'This is an AI-written draft. Check names, decisions and dates against your notes, edit anything that is wrong, then export.' }),
+    ed('h1', 'title', m.title, 'Meeting title'),
+    h('p', { class: 'meta' },
+      h('span', { text: `${L.date}: ${meta.date}` }), h('span', { text: `${L.time}: ${meta.time}` }),
+      h('span', { text: `${L.location}: ${meta.location}` }),
+      meta.preparedBy ? h('span', { text: `${L.preparedBy}: ${meta.preparedBy}` }) : null),
+    h('h2', { text: L.summary }), ed('p', 'summary', m.summary, 'Add a summary'),
+    h('h2', { text: L.attendees }),
+    m.attendees.length ? h('ul', {}, m.attendees.map((a, i) => h('li', {}, ed('span', `attendees.${i}`, a)))) : h('p', { class: 'none', text: 'No attendees were identified from the audio.' }),
+    h('h2', { text: L.discussion }),
+    m.discussion.length ? m.discussion.map((d, i) => [
+      ed('h3', `discussion.${i}.topic`, d.topic, 'Topic'),
+      h('ul', {}, d.points.map((p, j) => h('li', {}, ed('span', `discussion.${i}.points.${j}`, p))))
+    ]) : h('p', { class: 'none', text: 'No discussion was captured.' }),
+    h('h2', { text: L.decisions }),
+    m.decisions.length ? h('ul', {}, m.decisions.map((d, i) => h('li', {}, ed('span', `decisions.${i}`, d)))) : h('p', { class: 'none', text: 'No decisions were recorded.' }),
+    h('h2', { text: L.actions }),
+    actionTable(m, L)
+  ];
+  root.append(...parts.flat(Infinity).filter(Boolean));
+  if (m.unclear.length) {
+    root.append(h('h2', { text: L.unclear }),
+      h('div', { class: 'review-box' }, h('ul', {}, m.unclear.map((u, i) => h('li', {}, ed('span', `unclear.${i}`, u))))));
+  }
+  if (m.transcript) root.append(h('h2', { text: L.transcript }), ed('div', 'transcript', m.transcript, '', 'transcript'));
+  el.empty.hidden = true; el.out.hidden = false; el.out.replaceChildren(root);
+  renderToggle();
+}
+function actionTable(m, L) {
+  const body = h('tbody');
+  m.actionItems.forEach((a, i) => body.append(h('tr', {},
+    h('td', {}, ed('span', `actionItems.${i}.task`, a.task, 'Task')),
+    h('td', {}, ed('span', `actionItems.${i}.owner`, a.owner, 'Owner')),
+    h('td', {}, ed('span', `actionItems.${i}.due`, a.due, 'Due')),
+    h('td', {}, h('button', { class: 'link-btn', type: 'button', 'aria-label': `Remove action item ${i + 1}`, text: 'Remove', onclick: () => { m.actionItems.splice(i, 1); renderMinutes(); } })))));
+  const wrap = h('div', {},
+    m.actionItems.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'actions' },
+      h('thead', {}, h('tr', {}, h('th', { text: L.task }), h('th', { text: L.owner }), h('th', { text: L.due }), h('th', { class: 'sr-only', text: 'Remove' }))), body))
+      : h('p', { class: 'none', text: 'No action items were recorded.' }),
+    h('button', { class: 'btn btn-small add-row', type: 'button', text: 'Add action item', onclick: () => {
+      m.actionItems.push({ task: '', owner: 'Not stated', due: 'Not stated' }); renderMinutes();
+      const cells = el.out.querySelectorAll('[data-path$=".task"]'); if (cells.length) cells[cells.length - 1].focus();
+    } }));
+  return wrap;
+}
+function renderToggle() {
+  el.toggle.replaceChildren();
+  if (!minutes || !minutes.tr) { el.toggle.hidden = true; return; }
+  el.toggle.hidden = false;
+  [['en', 'English'], ['tr', minutes.trName]].forEach(([k, label]) =>
+    el.toggle.append(h('button', { type: 'button', 'aria-pressed': String(view === k), text: label, onclick: () => { view = k; renderMinutes(); } })));
+}
+// Editing: write changes back to the data, which is what the Word export reads
+el.out.addEventListener('input', e => {
+  const p = e.target.dataset && e.target.dataset.path;
+  if (p && minutes) { setPath(minutes[view], p, e.target.classList.contains('transcript') ? e.target.innerText : e.target.textContent); exported = false; }
+});
+el.out.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.path && !e.target.classList.contains('transcript')) { e.preventDefault(); e.target.blur(); } });
+el.out.addEventListener('paste', e => {
+  if (e.target.dataset && e.target.dataset.path) { e.preventDefault(); document.execCommand('insertText', false, e.clipboardData.getData('text/plain')); }
+});
+
+/* ============================================================
+   Word export
+   ============================================================ */
+el.docx.addEventListener('click', async () => {
+  if (!minutes) return;
+  if (!window.docx) { toast('The Word export library did not load. Check your network and reload the page.'); return; }
+  el.docx.disabled = true;
+  try {
+    const blob = await buildDocx(getMeta());
+    download(blob, `LWTC_Minutes_${slug(minutes.en.title) || 'meeting'}_${$('meetingDate').value || new Date().toISOString().slice(0, 10)}.docx`);
+    exported = true; toast(logoFailed ? 'Downloaded. The logo could not be loaded, so the letterhead shows the college name as text.' : 'Word document downloaded.');
+  } catch (e) { console.error(e); toast('The Word export failed. Try again.'); }
+  el.docx.disabled = false;
+});
+
+async function buildDocx(meta) {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, ImageRun, PageBreak, Footer } = docx;
+  const INK = '231F20', HF = 'Rockwell', BF = 'Calibri';
+  const run = (text, o = {}) => new TextRun({ text, font: BF, color: INK, size: 22, ...o });
+  const para = (text, o = {}) => new Paragraph({ spacing: { after: 100 }, children: [run(text)], ...o });
+  const heading = t => new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 280, after: 100 }, children: [new TextRun({ text: t, font: HF, bold: true, size: 28, color: INK })] });
+  const bullet = t => new Paragraph({ bullet: { level: 0 }, spacing: { after: 60 }, children: [run(t)] });
+  const cell = (t, w, head) => new TableCell({
+    width: { size: w, type: WidthType.PERCENTAGE },
+    shading: head ? { type: ShadingType.CLEAR, fill: 'E1EEF3', color: 'auto' } : undefined,
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    children: [new Paragraph({ children: [run(t, head ? { bold: true } : {})] })]
+  });
+
+  const lh = await makeLetterhead(EN_LABELS.draftNote);
+  const children = [...lh.top];
+
+  const versions = [minutes.en].concat(minutes.tr ? [minutes.tr] : []);
+  versions.forEach((m, idx) => {
+    const L = m.labels;
+    if (idx > 0) children.push(new Paragraph({ children: [new PageBreak()] }));
+    children.push(
+      new Paragraph({ spacing: { after: 100 }, border: { bottom: { style: BorderStyle.SINGLE, size: 18, color: 'F37026', space: 4 } },
+        children: [new TextRun({ text: m.title, font: HF, bold: true, size: 40, color: INK })] }),
+      new Paragraph({ spacing: { before: 100, after: 200 }, children: [run(
+        [`${L.date}: ${meta.date}`, `${L.time}: ${meta.time}`, `${L.location}: ${meta.location}`, meta.preparedBy ? `${L.preparedBy}: ${meta.preparedBy}` : ''].filter(Boolean).join('   |   '),
+        { italics: true }
+      )] }),
+      heading(L.summary), para(m.summary || '-'),
+      heading(L.attendees)
+    );
+    (m.attendees.length ? m.attendees : ['-']).forEach(a => children.push(bullet(a)));
+    children.push(heading(L.discussion));
+    if (!m.discussion.length) children.push(para('-'));
+    m.discussion.forEach(d => {
+      children.push(new Paragraph({ spacing: { before: 120, after: 60 }, children: [run(d.topic, { bold: true })] }));
+      d.points.forEach(p => children.push(bullet(p)));
+    });
+    children.push(heading(L.decisions));
+    (m.decisions.length ? m.decisions : ['-']).forEach(d => children.push(bullet(d)));
+    children.push(heading(L.actions));
+    if (m.actionItems.length) {
+      children.push(new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [new TableRow({ tableHeader: true, children: [cell(L.task, 55, true), cell(L.owner, 25, true), cell(L.due, 20, true)] })]
+          .concat(m.actionItems.map(a => new TableRow({ children: [cell(a.task, 55), cell(a.owner, 25), cell(a.due, 20)] })))
+      }));
+    } else children.push(para('-'));
+    if (m.unclear.length) { children.push(heading(L.unclear)); m.unclear.forEach(u => children.push(bullet(u))); }
+    if (m.transcript) { children.push(heading(L.transcript)); m.transcript.split('\n').forEach(line => children.push(para(line))); }
+    children.push(
+      new Paragraph({ spacing: { before: 480 }, children: [run(`${L.approvedBy}: ______________________________`)] }),
+      new Paragraph({ spacing: { before: 200 }, children: [run(`${L.approvedOn}: ______________________`)] })
+    );
+  });
+
+  const doc = new Document({
+    creator: meta.preparedBy || 'Lorenzo Walker Technical College',
+    title: `${minutes.en.title} - ${meta.date}`,
+    sections: [{
+      properties: { page: { margin: { top: 1000, bottom: 1300, left: 1300, right: 1300 } } },
+      footers: lh.footers,
+      children
+    }]
+  });
+  return Packer.toBlob(doc);
+}
+
+/* ============================================================
+   Letterhead, meeting information sheet, and recording package
+   ============================================================ */
+let logoFailed = false;
+// The logo and colour band go in the body of the first page, not in a Word header:
+// Word dims header content while you edit the body, which made the letterhead look faded.
+async function makeLetterhead(footerNote) {
+  const { Footer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, AlignmentType, HeightRule } = docx;
+  let logo; logoFailed = false;
+  try {
+    const r = await fetch(LOGO_PNG);
+    if (!r.ok) throw new Error('logo unavailable');
+    const b = await r.blob(), bmp = await createImageBitmap(b);
+    const w = 230, hgt = Math.round(w * bmp.height / bmp.width);
+    logo = new Paragraph({ spacing: { after: 160 }, children: [new ImageRun({ data: await b.arrayBuffer(), type: 'png', transformation: { width: w, height: hgt } })] });
+  } catch (e) {
+    logoFailed = true;
+    logo = new Paragraph({ spacing: { after: 160 }, children: [new TextRun({ text: LETTERHEAD.name, font: 'Rockwell', bold: true, size: 36, color: '231F20' })] });
+  }
+  const none = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const band = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: { top: none, bottom: none, left: none, right: none, insideHorizontal: none, insideVertical: none },
+    rows: [new TableRow({
+      height: { value: 160, rule: HeightRule.EXACT },
+      children: ['F37026', '92B547', 'FBB14A', '4691A9'].map(fill => new TableCell({
+        width: { size: 25, type: WidthType.PERCENTAGE },
+        borders: { top: none, bottom: none, left: none, right: none },
+        shading: { type: ShadingType.CLEAR, fill, color: 'auto' },
+        children: [new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '', size: 2 })] })]
+      }))
+    })]
+  });
+  const foot = t => new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t, font: 'Calibri', size: 18, color: '5E5759' })] });
+  const contact = [LETTERHEAD.address, LETTERHEAD.phone, LETTERHEAD.web].filter(Boolean).join('   |   ');
+  const fchildren = [foot(LETTERHEAD.name)];
+  if (contact) fchildren.push(foot(contact));
+  if (footerNote) fchildren.push(foot(footerNote));
+  return {
+    top: [logo, band, new Paragraph({ spacing: { after: 280 }, children: [] })],
+    footers: { default: new Footer({ children: fchildren }) }
+  };
+}
+
+async function buildInfoDoc(meta, names) {
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle } = docx;
+  const INK = '231F20', HF = 'Rockwell', BF = 'Calibri';
+  const run = (t, o = {}) => new TextRun({ text: t, font: BF, color: INK, size: 22, ...o });
+  const lh = await makeLetterhead('Keep this sheet together with the audio file.');
+  const when = rec.startedAt ? rec.startedAt.toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }) : 'Not recorded';
+  const size = `${(rec.blob.size / 1048576).toFixed(1)} MB`;
+  const rows = [
+    ['Meeting type', meta.category], ['Date', meta.date], ['Start time', meta.time], ['Location', meta.location],
+    ['Prepared by', meta.preparedBy || 'Not specified'],
+    ['Expected attendees', meta.attendees ? meta.attendees.split('\n').map(x => x.trim()).filter(Boolean).join('; ') : 'Not provided'],
+    ['Recording started', when], ['Recording length', fmtClock(rec.duration)],
+    ['Audio file', `${names.audio} (${size})`],
+    ['Recording consent', 'The note taker confirmed before recording that everyone present was told the meeting was being recorded.'],
+    ['Minutes status', minutes ? `Draft minutes written with AI assistance are included in this package (${names.minutes}) and need review.` : 'Audio only. Minutes have not been written yet.']
+  ];
+  const edge = { style: BorderStyle.SINGLE, size: 4, color: '7A7274' };
+  const borders = { top: edge, bottom: edge, left: edge, right: edge };
+  const cell = (t, w, head) => new TableCell({
+    width: { size: w, type: WidthType.PERCENTAGE }, borders,
+    shading: head ? { type: ShadingType.CLEAR, fill: 'E1EEF3', color: 'auto' } : undefined,
+    margins: { top: 70, bottom: 70, left: 120, right: 120 },
+    children: [new Paragraph({ children: [run(t, head ? { bold: true } : {})] })]
+  });
+  const doc = new Document({
+    creator: meta.preparedBy || LETTERHEAD.name,
+    title: `Meeting information: ${meta.category}, ${meta.date}`,
+    sections: [{
+      properties: { page: { margin: { top: 1000, bottom: 1300, left: 1300, right: 1300 } } },
+      footers: lh.footers,
+      children: [
+        ...lh.top,
+        new Paragraph({ spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 18, color: 'F37026', space: 4 } },
+          children: [new TextRun({ text: 'Meeting recording information', font: HF, bold: true, size: 40, color: INK })] }),
+        new Paragraph({ spacing: { before: 120, after: 240 }, children: [run(
+          `This sheet describes a recording of the ${meta.category} held on ${meta.date} at ${meta.time}, location: ${meta.location}. ` +
+          `The recording was made by ${meta.preparedBy || 'the note taker'} and runs ${fmtClock(rec.duration)}. The details below were entered in the LWTC Meeting Minutes tool.`) ] }),
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: rows.map(([k, v]) => new TableRow({ cantSplit: true, children: [cell(k, 30, true), cell(v, 70, false)] })) })
+      ]
+    }]
+  });
+  return Packer.toBlob(doc);
+}
+
+async function downloadPackage() {
+  if (!rec.blob) { toast('Record a meeting first.'); return; }
+  if (!window.docx) { toast('The document library did not load. Check your network and reload the page.'); return; }
+  el.pkg.disabled = true; el.audio.disabled = true;
+  try {
+    const meta = getMeta(), n = packageNames(meta);
+    const files = [[n.audio, rec.blob], [n.info, await buildInfoDoc(meta, n)]];
+    if (minutes) files.push([n.minutes, await buildDocx(meta)]);
+    if (window.JSZip) {
+      const zip = new JSZip();
+      files.forEach(([name, blob]) => zip.file(name, blob));
+      download(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), n.zip);   // audio is already compressed
+      toast(logoFailed ? 'Package downloaded. The logo could not be loaded, so the letterhead shows the college name as text.' : 'Recording package downloaded.');
+    } else {
+      files.forEach(([name, blob], i) => setTimeout(() => download(blob, name), i * 700));
+      toast('The zip library did not load, so the files are downloading one by one.');
+    }
+    rec.saved = true; if (minutes) exported = true;
+  } catch (e) {
+    console.error(e); toast('The package could not be created. Try again, or download the audio only.');
+  }
+  el.pkg.disabled = !rec.blob; el.audio.disabled = !rec.blob;
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+(() => {
+  const today = new Date(); $('meetingDate').value = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  if (canvasUser) $('preparedBy').value = canvasUser;
+  const copilotOpt = el.model.querySelector('option[value="copilot"]');
+  if (!isConfigured('copilot')) copilotOpt.textContent += ' (setup required)';
+  refreshAuthUI(); setRecUI('idle'); listMics();
+  if (!window.MediaRecorder || !navigator.mediaDevices) { el.record.disabled = true; toast('This browser cannot record audio. Use a current version of Chrome, Edge, Firefox or Safari.'); }
+})();
+
+})();
+</script>
+</body>
+</html>
