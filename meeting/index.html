@@ -552,6 +552,16 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
 .link-btn { background: none; border: 0; padding: 4px 8px; text-decoration: underline; cursor: pointer; font-size: 14px; }
 .add-row { margin-top: var(--s2); }
 
+/* Occupational Advisory Committee form */
+.oac-box { background: var(--orange-tint); border-radius: var(--r2); padding: var(--s3); margin: 0 0 var(--s3); }
+.oac-box > h3 { font-family: var(--font-display); font-weight: 400; font-size: 18px; margin: 0 0 var(--s1); line-height: 1.2; }
+.oac-box > .hint { margin: 0 0 var(--s3); }
+.oac-group { border-top: 1px solid rgba(35, 31, 32, .18); padding: var(--s1) 0; }
+.oac-group > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; }
+.oac-group[open] > summary { margin-bottom: var(--s2); }
+.oac-list { margin: 0 0 var(--s3); padding-left: var(--s4); columns: 2; column-gap: var(--s4); }
+.oac-list li { margin-bottom: 2px; break-inside: avoid; }
+@media (max-width: 600px) { .oac-list { columns: 1; } }
 #toast { position: fixed; left: 50%; bottom: var(--s4); transform: translateX(-50%); background: var(--ink); color: var(--white); padding: 12px 24px; border-radius: var(--r3); max-width: calc(100vw - 32px); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 10; }
 #toast.show { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
@@ -605,6 +615,20 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
         <input type="text" id="categoryOther" maxlength="100" placeholder="For example: Welding program industry roundtable">
         <p class="hint">This name appears on the minutes, the information sheet, and the file names.</p>
       </div>
+      <div id="oacBlock" class="oac-box" hidden>
+        <h3>Occupational Advisory Committee details</h3>
+        <p class="hint">These fill the OAC minutes template. Anything you leave blank stays as a prompt to complete in Word.</p>
+        <div class="field">
+          <label for="oac_program">Program</label>
+          <select id="oac_program" data-oac="program"><option value="">Choose a program</option></select>
+        </div>
+        <div class="field">
+          <label for="oac_term">Term</label>
+          <input type="text" id="oac_term" data-oac="term" placeholder="Fall 2026">
+          <p class="hint" style="margin-bottom:0">Set from the meeting date: Spring is January to May, Summer is June to August 15, and Fall is August 16 to December. Change it if needed.</p>
+        </div>
+        <div id="oacGroups"></div>
+      </div>
       <div class="two-col">
         <div class="field"><label for="meetingDate">Date</label><input type="date" id="meetingDate"></div>
         <div class="field"><label for="meetingTime">Start time</label><input type="time" id="meetingTime"></div>
@@ -633,8 +657,9 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
           <option value="ja">Japanese</option>
           <option value="pt">Portuguese</option>
         </select>
+        <p class="hint" id="translateNote" hidden>Not available for the OAC template, which is in English.</p>
       </div>
-      <div class="check">
+      <div class="check" id="transcriptRow">
         <input type="checkbox" id="includeTranscript">
         <label for="includeTranscript">Include a full transcript at the end of the minutes</label>
       </div>
@@ -761,6 +786,91 @@ const REDIRECT_URI = location.origin + location.pathname;
 // (Opening the page straight from disk blocks that, so test over http or https.)
 const LETTERHEAD = { name: 'Lorenzo Walker Technical College', address: '', phone: '', web: '' };
 const LOGO_PNG = '../assets/logos/png/lwtc-logo.png';
+
+/* ============================================================
+   OCCUPATIONAL ADVISORY COMMITTEE (OAC) TEMPLATE
+   The OAC minutes are made by filling templates/oac-minutes-template.docx, so they keep the official layout.
+   Each field in that file carries a name (a content-control tag such as "oac:callBy"), and the keys below
+   match those names. If you add a field to the template in Word, give it a matching tag.
+   ============================================================ */
+const OAC_NAME = 'Occupational Advisory Meeting';
+const OAC_TEMPLATE_URL = 'templates/oac-minutes-template.docx';
+const PROGRAMS = [
+  "Accounting Operations",
+  "Automotive Collision Technology Technician",
+  "Aviation Airframe Mechanics",
+  "Aviation Powerplant Mechanics",
+  "Avionics Systems Technician",
+  "Building Construction Technologies",
+  "Cosmetology",
+  "Database Application Development & Programming",
+  "Dental Assisting",
+  "Digital Media/Multimedia Design",
+  "Drafting",
+  "Electronic Systems Integration and Automation",
+  "Enterprise Desktop and Mobile Support Technology",
+  "Facials Specialty",
+  "Heating, Ventilation, Air-Conditioning/Refrigeration (HVAC/R)",
+  "Marine Service Technologies",
+  "Master Automotive Service Technology 1",
+  "Medical Assisting",
+  "Nursing Assistant (Articulated)",
+  "Patient Care Technician",
+  "Pharmacy Technician",
+  "Phlebotomy",
+  "Practical Nursing",
+  "Professional Culinary Arts & Hospitality",
+  "Professional Nursing (LPN to RN)",
+  "Surgical Technology",
+  "Veterinary Assisting",
+  "Welding Technology",
+];
+const opt = (v, l) => ({ v, l: l || v });
+const NOTE = 'brief minutes of what was said on this agenda topic (1 to 4 plain sentences), or empty if it was not discussed';
+const OAC_GROUPS = [
+  { title: 'Opening', open: true, fields: [
+    { k: 'callTime', label: 'Called to order at', type: 'time', ai: 'time the meeting was called to order, such as 9:05 AM' },
+    { k: 'callBy', label: 'Called to order by', type: 'text', ai: 'name of the person who called the meeting to order' },
+    { k: 'welcomeBy', label: 'Advisory members welcomed by', type: 'text', ai: 'name of the person who welcomed the advisory members' } ] },
+  { title: 'Attendance and quorum', fields: [
+    { k: 'present', label: 'Advisory committee members present', type: 'names', hint: 'Full names, one per line.', ai: 'advisory committee members present, full names, one per line' },
+    { k: 'absent', label: 'Advisory committee members absent', type: 'names', hint: 'Full names, one per line.', ai: 'advisory committee members absent, full names, one per line' },
+    { k: 'staff', label: 'LWTC staff present', type: 'names', hint: 'One per line.', ai: 'LWTC staff present, one per line' },
+    { k: 'quorum', label: 'Quorum present', type: 'select', options: [opt('Yes'), opt('No')], hint: 'Minimum of three members present. One can be virtual.', ai: 'whether a quorum was determined, only if it was announced or counted' } ] },
+  { title: 'Approval of the previous minutes', fields: [
+    { k: 'motionBy', label: 'Motion made by', type: 'text', ai: 'name of the member who moved to adopt the previous minutes' },
+    { k: 'secondBy', label: 'Seconded by', type: 'text', ai: 'name of the member who seconded the motion' },
+    { k: 'outcome', label: 'Advisory committee members were', type: 'select', options: [opt('in favor and minutes were approved', 'In favor: minutes approved'), opt('not in favor and minutes were not approved', 'Not in favor: minutes not approved')], ai: 'the result of the vote on the previous minutes' } ] },
+  { title: 'Program instructional review', fields: [
+    { k: 'clockHours', label: 'Program clock hours', type: 'text', num: true, ph: 'For example 1200', ai: 'total clock hours of the program, digits only' },
+    { k: 'delivery', label: 'Delivery method', type: 'select', options: [opt('traditional'), opt('hybrid'), opt('distance')], ai: 'how the program is taught' },
+    { k: 'classroomHours', label: 'Classroom hours', type: 'text', num: true, ph: 'For example 900', ai: 'hours taught in the classroom, digits only' },
+    { k: 'labHours', label: 'Lab/shop hours', type: 'text', num: true, ph: 'For example 300', ai: 'hours spent in the lab or shop, digits only' },
+    { k: 'wbl', label: 'Work-based learning setting', type: 'select', options: [opt('clinical'), opt('non-paid Internship'), opt('paid Internship'), opt('job shadowing')], ai: 'the work-based learning setting the program uses' },
+    { k: 'curriculum', label: 'Curriculum materials', type: 'select', options: [opt('digital books'), opt('textbooks'), opt('digital books/textbooks')], ai: 'what the program uses to teach' },
+    { k: 'assessment', label: 'Assessment', type: 'select', options: [opt('State Licensure'), opt('Industry Certification'), opt('Teacher-Made Test')], ai: 'the exam students are prepared to take' } ] },
+  { title: 'Closing', fields: [
+    { k: 'adjournTime', label: 'Adjourned at', type: 'time', ai: 'time the meeting was adjourned, such as 2:15 PM' },
+    { k: 'nextMeeting', label: 'Next meeting', type: 'text', ai: 'date or term of the next meeting, if one was given' },
+    { k: 'minutesBy', label: 'Minutes submitted by', type: 'text', ai: 'name of the person taking the minutes, if stated' } ] },
+  { title: 'Notes by agenda topic (optional)', fields: [
+    { k: 'deliveryNotes', label: 'Delivery method notes', type: 'notes', ai: NOTE },
+    { k: 'labNotes', label: 'Lab/shop notes', type: 'notes', ai: NOTE },
+    { k: 'wblNotes', label: 'Work-based learning notes', type: 'notes', ai: NOTE },
+    { k: 'curriculumNotes', label: 'Curriculum notes', type: 'notes', ai: NOTE },
+    { k: 'assessmentNotes', label: 'Assessment notes', type: 'notes', ai: NOTE },
+    { k: 'resourcesNotes', label: 'Resources, supplies/materials, and equipment', type: 'notes', ai: NOTE },
+    { k: 'enrollment', label: 'Enrollment', type: 'notes', ai: NOTE },
+    { k: 'completers', label: 'Program completers', type: 'notes', ai: NOTE },
+    { k: 'certifications', label: 'Earned industry certifications', type: 'notes', ai: NOTE },
+    { k: 'placement', label: 'Program placement', type: 'notes', ai: NOTE },
+    { k: 'changes', label: 'Substantial changes', type: 'notes', ai: NOTE },
+    { k: 'accreditation', label: 'Accreditation/legislative updates, if applicable', type: 'notes', ai: NOTE },
+    { k: 'jobPlacement', label: 'Job placement opportunities', type: 'notes', ai: NOTE },
+    { k: 'aiIndustry', label: 'AI in the industry', type: 'notes', ai: NOTE },
+    { k: 'openAgenda', label: 'Open agenda', type: 'notes', ai: NOTE } ] }
+];
+const OAC_FIELDS = OAC_GROUPS.flatMap(g => g.fields);
 const MAX_REQUEST_BYTES = 19.5 * 1024 * 1024;   // Gemini inline request limit is about 20 MB
 const SILENT_LEVEL = 0.02;                     // peak below this for a whole recording = treated as silent
 const ENCODE_RATE = 16000;                      // audio is resampled to this rate before encoding (see makeResampler)
@@ -813,7 +923,7 @@ function fmtDate(iso) {
 }
 function fmtTime(v) {
   if (!v) return 'Not specified';
-  return new Date(`1970-01-01T${v}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return new Date(`1970-01-01T${v}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(/[\u202f\u00a0]/g, ' ');
 }
 function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 function download(blob, name) {
@@ -1232,7 +1342,7 @@ el.record.addEventListener('click', async () => {
   }
   listMics(); startMeter(rec.stream);
   canvasMode = 'empty'; el.out.hidden = true; el.empty.hidden = false;
-  minutes = null; view = 'en'; exported = true; el.docx.disabled = true; el.toggle.hidden = true;
+  minutes = null; view = 'en'; exported = true; oacAi.used = false; refreshDocxBtn(); el.toggle.hidden = true;
   rec.last = Date.now(); el.timer.textContent = '00:00';
   clearInterval(rec.tick); rec.tick = setInterval(tickTimer, 500);
   setRecUI('recording');
@@ -1248,13 +1358,14 @@ el.stop.addEventListener('click', () => {
   afterStop();
 });
 window.addEventListener('beforeunload', e => {
-  if (rec.state === 'recording' || rec.state === 'paused' || (rec.blob && !rec.saved) || (minutes && !exported)) { e.preventDefault(); e.returnValue = ''; }
+  if (rec.state === 'recording' || rec.state === 'paused' || (rec.blob && !rec.saved) || ((minutes || oacAi.used) && !exported)) { e.preventDefault(); e.returnValue = ''; }
 });
 
 const audioExt = m => /wav/.test(m) ? 'wav' : 'mp3';
 function packageNames(meta) {
-  const base = `LWTC_${slug(meta.category)}_${meta.dateISO || new Date().toISOString().slice(0, 10)}`;
-  return { audio: `${base}_recording.${audioExt(rec.mime)}`, info: `${base}_meeting-info.docx`, minutes: `${base}_minutes.docx`, zip: `${base}_recording-package.zip` };
+  const day = meta.dateISO || new Date().toISOString().slice(0, 10);
+  const base = meta.isOac ? `LWTC_OAC_${slug(meta.program) || 'program'}_${day}` : `LWTC_${slug(meta.category)}_${day}`;
+  return { audio: `${base}_recording.${audioExt(rec.mime)}`, info: `${base}_meeting-info.docx`, minutes: `${base}_${meta.isOac ? 'OAC-minutes' : 'minutes'}.docx`, zip: `${base}_recording-package.zip` };
 }
 function downloadAudio() {
   if (!rec.blob) return;
@@ -1332,15 +1443,25 @@ function meetingName() {
   const v = $('category').value;
   return v === 'Other' ? ($('categoryOther').value.trim() || 'Other meeting') : v;
 }
-$('category').addEventListener('change', () => {
-  const other = $('category').value === 'Other';
-  $('otherField').hidden = !other;
-  if (other) $('categoryOther').focus();
-});
+const isOac = () => $('category').value === OAC_NAME;
+function updateCategoryUI() {
+  const v = $('category').value, oac = v === OAC_NAME;
+  $('otherField').hidden = v !== 'Other';
+  $('oacBlock').hidden = !oac;
+  const tl = $('translationLanguage'); tl.disabled = oac; if (oac) tl.value = 'en';
+  $('translateNote').hidden = !oac; $('transcriptRow').hidden = oac;
+  refreshDocxBtn();
+  if (oac) oacAuto();
+}
+$('category').addEventListener('change', () => { updateCategoryUI(); if ($('category').value === 'Other') $('categoryOther').focus(); });
 function getMeta() {
-  const sel = $('translationLanguage');
+  const sel = $('translationLanguage'), oac = isOac();
+  const program = oac ? $('oac_program').value : '';
+  const category = meetingName();
   return {
-    category: meetingName(), dateISO: $('meetingDate').value, date: fmtDate($('meetingDate').value),
+    category, isOac: oac, program, term: oac ? $('oac_term').value.trim() : '',
+    label: oac && program ? `${category} (${program})` : category,
+    dateISO: $('meetingDate').value, date: fmtDate($('meetingDate').value),
     time: fmtTime($('meetingTime').value), location: $('meetingLocation').value.trim() || 'Not specified',
     attendees: $('attendees').value.trim(), preparedBy: $('preparedBy').value.trim(),
     langCode: sel.value, langName: sel.options[sel.selectedIndex].text, transcript: $('includeTranscript').checked
@@ -1396,6 +1517,12 @@ async function processMinutes() {
       throw new Error(`This recording (${(rec.blob.size / 1048576).toFixed(1)} MB) is too large to send in one request. Download the audio and split it into shorter parts.`);
     }
     const base64 = await blobToBase64(rec.blob);
+    if (meta.isOac) {
+      showWorking('Writing the OAC minutes…');
+      applyOacAi(await generateOac(meta, base64, rec.format === 'wav' ? 'audio/wav' : 'audio/mp3'));
+      exported = false; refreshDocxBtn(); showOacDraft(); setRecUI('done');
+      return;
+    }
     showWorking('Writing the minutes…');
     const en = await generateMinutes(meta, base64, rec.format === 'wav' ? 'audio/wav' : 'audio/mp3');
     minutes = { en };
@@ -1453,13 +1580,15 @@ function showSaved() {
     rec.silent ? h('div', { class: 'warn-box', role: 'alert' },
       h('p', { text: 'This recording looks silent. No sound was picked up by the microphone, so the AI was not run. Play it below to check. If it is silent, run the microphone check and record again.' }),
       h('div', { class: 'actions' }, h('button', { class: 'btn btn-small', type: 'button', text: 'Check microphone', onclick: () => { el.micCheck.scrollIntoView({ block: 'center' }); runMicCheck(); } }))) : null,
-    h('p', { text: `${fmtClock(rec.duration)} of audio (${(rec.blob.size / 1048576).toFixed(1)} MB) for the ${meta.category} on ${meta.date}.` }),
+    h('p', { text: `${fmtClock(rec.duration)} of audio (${(rec.blob.size / 1048576).toFixed(1)} MB) for the ${meta.label} on ${meta.date}.` }),
     h('audio', { controls: true, src: (rec.previewUrl = rec.previewUrl || URL.createObjectURL(rec.blob)), 'aria-label': 'Play back the recording' }),
     h('p', { text: 'Download the package now. It holds the audio file and a meeting information sheet on LWTC letterhead.' }),
     h('div', { class: 'actions' },
       h('button', { class: 'btn btn-primary', type: 'button', text: 'Download recording package', onclick: () => downloadPackage() }),
-      h('button', { class: 'btn', type: 'button', text: 'Download audio only', onclick: downloadAudio })),
-    h('div', { class: 'callout' }, h('h3', { text: 'Minutes are optional', style: 'margin-top:0' }), ai)));
+      h('button', { class: 'btn', type: 'button', text: 'Download audio only', onclick: downloadAudio }),
+      meta.isOac ? h('button', { class: 'btn', type: 'button', text: 'Download OAC minutes (.docx)', onclick: downloadOac }) : null),
+    meta.isOac ? h('p', { text: 'The OAC minutes template is filled from the details in the form on the left, so you can download it at any time.' }) : null,
+    h('div', { class: 'callout' }, h('h3', { text: meta.isOac ? 'AI-written minutes are optional' : 'Minutes are optional', style: 'margin-top:0' }), ai)));
 }
 function ed(tag, path, text, ph, cls) {
   const e = h(tag, { class: 'ed ' + (cls || ''), contenteditable: 'true', 'data-path': path, 'data-ph': ph || '' });
@@ -1534,9 +1663,331 @@ el.out.addEventListener('paste', e => {
 });
 
 /* ============================================================
+   OAC: form, defaults, and AI draft
+   ============================================================ */
+const oacAi = { used: false, filled: [], blank: [] };
+const oacEl = k => document.querySelector(`#oacBlock [data-oac="${k}"]`);
+function oacRead() {
+  const v = {};
+  document.querySelectorAll('#oacBlock [data-oac]').forEach(e => { v[e.dataset.oac] = e.value.trim(); });
+  return v;
+}
+function oacFieldEl(f) {
+  const id = 'oac_' + f.k;
+  let ctl;
+  if (f.type === 'select') ctl = h('select', { id, 'data-oac': f.k }, h('option', { value: '', text: 'Not specified' }), ...f.options.map(o => h('option', { value: o.v, text: o.l })));
+  else if (f.type === 'names' || f.type === 'notes') ctl = h('textarea', { id, 'data-oac': f.k, rows: 3 });
+  else ctl = h('input', { id, 'data-oac': f.k, type: f.type === 'time' ? 'time' : 'text', placeholder: f.ph || '' });
+  return h('div', { class: 'field' }, h('label', { for: id, text: f.label }), ctl, f.hint ? h('p', { class: 'hint', text: f.hint }) : null);
+}
+function buildOacForm() {
+  const sel = $('oac_program');
+  PROGRAMS.forEach(name => sel.append(h('option', { value: name, text: name })));
+  $('oacGroups').replaceChildren(...OAC_GROUPS.map(g => h('details', { class: 'oac-group', open: !!g.open }, h('summary', { text: g.title }), ...g.fields.map(oacFieldEl))));
+  // Typing marks a field as "touched", which stops automatic defaults from overwriting it.
+  $('oacBlock').addEventListener('input', e => { if (e.target.dataset && e.target.dataset.oac) e.target.dataset.touched = '1'; oacAuto(); });
+  $('oacBlock').addEventListener('change', e => { if (e.target.dataset && e.target.dataset.oac) e.target.dataset.touched = '1'; oacAuto(); });
+  ['meetingDate', 'meetingTime', 'preparedBy'].forEach(id => $(id).addEventListener('input', oacAuto));
+}
+// Spring: January 1 to May 31. Summer: June 1 to August 15. Fall: August 16 to December 31.
+function termFromDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  if (!m) return '';
+  const y = m[1], mo = +m[2], d = +m[3];
+  const name = mo <= 5 ? 'Spring' : (mo < 8 || (mo === 8 && d <= 15)) ? 'Summer' : 'Fall';
+  return `${name} ${y}`;
+}
+function parseTerm(t) {
+  const m = /^(Fall|Spring|Summer)\s+(\d{4})$/i.exec((t || '').trim());
+  return m ? { s: m[1][0].toUpperCase() + m[1].slice(1).toLowerCase(), y: +m[2] } : null;
+}
+// The OAC meets in Fall and Spring, so "previous" and "next" skip Summer, as the template does.
+const prevTerm = t => { const p = parseTerm(t); return !p ? '' : p.s === 'Spring' ? `Fall ${p.y - 1}` : `Spring ${p.y}`; };
+const nextTerm = t => { const p = parseTerm(t); return !p ? '' : p.s === 'Fall' ? `Spring ${p.y + 1}` : `Fall ${p.y}`; };
+// Academic year for the Program Status heading: Fall 2026 and Spring 2027 meetings both report on the year ending in the term's year.
+const academicYear = t => { const p = parseTerm(t); return p ? `${p.y - 1}-${p.y}` : ''; };
+function oacAuto() {
+  if (!isOac()) return;
+  const setIfUntouched = (k, val) => { const e = oacEl(k); if (e && !e.dataset.touched) e.value = val; };
+  setIfUntouched('term', termFromDate($('meetingDate').value));
+  const next = nextTerm(oacEl('term').value);
+  setIfUntouched('nextMeeting', next ? `${next}, date TBD` : '');
+  setIfUntouched('callTime', $('meetingTime').value);
+  setIfUntouched('minutesBy', $('preparedBy').value.trim());
+  if (oacEl('present').value.split('\n').filter(x => x.trim()).length >= 3) setIfUntouched('quorum', 'Yes');
+}
+function refreshDocxBtn() {
+  el.docx.textContent = isOac() ? 'Download OAC minutes (.docx)' : 'Download minutes (.docx)';
+  el.docx.disabled = isOac() ? false : !minutes;
+}
+function to12h(hhmm) {
+  if (!/^\d{1,2}:\d{2}$/.test(hhmm || '')) return '';
+  return new Date(`1970-01-01T${hhmm.padStart(5, '0')}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(/[\u202f\u00a0]/g, ' ');
+}
+function parseTime(raw) {
+  const m = /(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?/i.exec(String(raw || '')) || /^\s*(\d{1,2}):(\d{2})\s*$/.exec(String(raw || ''));
+  if (!m) return '';
+  let hr = +m[1]; const mi = +(m[2] || 0), ap = (m[3] || '').toLowerCase();
+  if (ap === 'p' && hr < 12) hr += 12; if (ap === 'a' && hr === 12) hr = 0;
+  return hr > 23 || mi > 59 ? '' : `${pad(hr)}:${pad(mi)}`;
+}
+
+const SYSTEM_OAC =
+  'You are the recording secretary for Lorenzo Walker Technical College, drafting Occupational Advisory Committee (OAC) minutes strictly from the audio provided. ' +
+  'Never invent content: do not add names, numbers, hours, decisions or dates that were not clearly said. ' +
+  'Use an empty string for anything that was not clearly said. Reply with one JSON object and nothing else.';
+async function generateOac(meta, base64, mime) {
+  const known = oacRead();
+  const names = ['present', 'absent', 'staff', 'callBy', 'welcomeBy', 'motionBy', 'secondBy', 'minutesBy']
+    .map(k => known[k]).filter(Boolean).join('; ').replace(/\n/g, ', ');
+  const spec = OAC_FIELDS.filter(f => f.ai).map(f => `  "${f.k}": "${f.ai}${f.type === 'select' ? '. Exactly one of: ' + f.options.map(o => o.v).join(' | ') + '. Otherwise empty' : ''}"`).join(',\n');
+  const prompt =
+`Meeting context supplied by the note taker (for labelling and name spelling only, not evidence of what was said):
+- Meeting: Occupational Advisory Committee, ${known.program || 'program not specified'}, ${known.term || 'term not specified'}
+- Date: ${meta.date}
+- Names the note taker already knows: ${names || 'none provided'}
+
+Return JSON with exactly these keys. Each value is a string. Do not guess.
+{
+${spec}
+}`;
+  return parseJSON(await callModel([{ inlineData: { mimeType: mime, data: base64 } }, { text: prompt }], SYSTEM_OAC));
+}
+function normalizeAi(f, raw) {
+  if (raw == null) return '';
+  if (f.type === 'names') {
+    const parts = Array.isArray(raw) ? raw : String(raw).includes('\n') ? String(raw).split('\n') : String(raw).split(';');
+    return parts.map(x => String(x).trim()).filter(Boolean).join('\n');
+  }
+  if (f.type === 'time') return parseTime(raw);
+  if (f.type === 'select') { const hit = f.options.find(o => o.v.toLowerCase() === String(raw).trim().toLowerCase()); return hit ? hit.v : ''; }
+  if (f.num) { const m = String(raw).match(/\d[\d,]*(?:\.\d+)?/); return m ? m[0].replace(/,/g, '') : ''; }
+  return String(raw).trim().slice(0, 1500);
+}
+const AUTO_FILLED = ['callTime', 'nextMeeting'];
+// The form always wins: the AI only fills empty fields (and the automatic defaults above).
+function applyOacAi(ai) {
+  const filled = [];
+  for (const f of OAC_FIELDS.filter(x => x.ai)) {
+    const e = oacEl(f.k);
+    // A field the person typed or picked is never replaced. Automatic defaults (start time, "date TBD") can be, since the recording is better evidence.
+    if (!e || (e.value.trim() && !(AUTO_FILLED.includes(f.k) && !e.dataset.touched))) continue;
+    const val = normalizeAi(f, ai && ai[f.k]);
+    if (val) { e.value = val; e.dataset.touched = '1'; filled.push(f.label); }
+  }
+  oacAi.used = true; oacAi.filled = filled;
+  oacAi.blank = OAC_FIELDS.filter(f => f.ai && !oacEl(f.k).value.trim()).map(f => f.label);
+}
+function showOacDraft() {
+  canvasMode = 'oac';
+  const list = items => items.length ? h('ul', { class: 'oac-list' }, items.map(t => h('li', { text: t }))) : null;
+  el.empty.hidden = true; el.out.hidden = false;
+  el.out.replaceChildren(h('div', { class: 'saved' },
+    h('h2', { text: 'OAC minutes draft ready' }),
+    h('p', { class: 'draft-note', text: 'This is an AI-written draft. Check names, hours and decisions, correct anything that is wrong in the form on the left, then download the minutes.' }),
+    h('h3', { text: `Filled from the recording (${oacAi.filled.length})` }),
+    list(oacAi.filled) || h('p', { text: 'Nothing in the recording matched a field that was still empty.' }),
+    h('h3', { text: `Still blank (${oacAi.blank.length})` }),
+    h('p', { text: 'These were not clearly said and were not in the form. They stay as prompts in the Word file, ready to complete.' }),
+    list(oacAi.blank),
+    h('div', { class: 'actions' },
+      h('button', { class: 'btn btn-primary', type: 'button', text: 'Download OAC minutes (.docx)', onclick: downloadOac }),
+      h('button', { class: 'btn', type: 'button', text: 'Download recording package', onclick: () => downloadPackage() }))));
+}
+
+/* ============================================================
+   OAC: fill the official template
+   ============================================================ */
+const WNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const XMLNS = 'http://www.w3.org/XML/1998/namespace';
+let oacTemplateBuf = null;
+async function loadOacTemplate() {
+  if (oacTemplateBuf) return oacTemplateBuf;
+  let r;
+  try { r = await fetch(OAC_TEMPLATE_URL); }
+  catch (e) { throw new Error('The OAC template could not be loaded. Open this page over http or https, not straight from a file.'); }
+  if (!r.ok) throw new Error(`The OAC template file was not found (${OAC_TEMPLATE_URL}).`);
+  return (oacTemplateBuf = await r.arrayBuffer());
+}
+const kid = (e, name) => { for (const c of e.childNodes) if (c.namespaceURI === WNS && c.localName === name) return c; return null; };
+const wEl = (doc, name) => doc.createElementNS(WNS, 'w:' + name);
+const nearest = (e, name) => { for (let n = e.parentNode; n; n = n.parentNode) if (n.localName === name) return n; return null; };
+const wText = (p, own) => [...p.getElementsByTagNameNS(WNS, 't')].filter(t => !own || nearest(t, 'p') === p);
+
+// Replace text inside one paragraph even when Word has split it across several runs.
+function replaceInParagraph(p, from, to) {
+  let searchFrom = 0;
+  for (let guard = 0; guard < 50; guard++) {
+    const ts = wText(p, true), full = ts.map(t => t.textContent).join('');
+    const idx = full.indexOf(from, searchFrom);
+    if (idx < 0) return;
+    let pos = 0, start = idx, remaining = from.length, first = true;
+    for (const t of ts) {
+      const txt = t.textContent, end = pos + txt.length;
+      if (end > start && remaining > 0) {
+        const s = start - pos, take = Math.min(txt.length - s, remaining);
+        t.textContent = txt.slice(0, s) + (first ? to : '') + txt.slice(s + take);
+        t.setAttributeNS(XMLNS, 'xml:space', 'preserve');
+        first = false; remaining -= take; start += take;
+      }
+      pos = end; if (remaining <= 0) break;
+    }
+    searchFrom = idx + to.length;       // keep going after the new text, so a replacement is never matched again
+  }
+}
+function setSdtText(doc, sdt, text, placeholder) {
+  const pr = kid(sdt, 'sdtPr'), content = kid(sdt, 'sdtContent');
+  const flag = pr && kid(pr, 'showingPlcHdr');
+  if (flag && !placeholder) pr.removeChild(flag);
+  const firstRun = content.getElementsByTagNameNS(WNS, 'r')[0];
+  let rPr = firstRun && kid(firstRun, 'rPr'); rPr = rPr ? rPr.cloneNode(true) : null;
+  if (rPr) {
+    for (const st of [...rPr.childNodes]) if (st.localName === 'rStyle' && st.getAttributeNS(WNS, 'val') === 'PlaceholderText') rPr.removeChild(st);
+    if (placeholder) { const rs = wEl(doc, 'rStyle'); rs.setAttributeNS(WNS, 'w:val', 'PlaceholderText'); rPr.insertBefore(rs, rPr.firstChild); }
+  }
+  const runs = [];
+  text.split('\n').forEach((line, i) => {
+    if (i > 0) { const br = wEl(doc, 'r'); if (rPr) br.appendChild(rPr.cloneNode(true)); br.appendChild(wEl(doc, 'br')); runs.push(br); }
+    const r = wEl(doc, 'r'); if (rPr) r.appendChild(rPr.cloneNode(true));
+    const t = wEl(doc, 't'); t.setAttributeNS(XMLNS, 'xml:space', 'preserve'); t.textContent = line; r.appendChild(t); runs.push(r);
+  });
+  const para = content.getElementsByTagNameNS(WNS, 'p')[0];
+  if (para && !nearest(sdt, 'p')) {
+    // The whole table cell is the control: edit the paragraph inside it.
+    const cell = para.parentNode;
+    for (const other of [...cell.childNodes]) if (other.localName === 'p' && other !== para) cell.removeChild(other);
+    for (const c of [...para.childNodes]) if (c.localName !== 'pPr') para.removeChild(c);
+    runs.forEach(r => para.appendChild(r));
+  } else {
+    while (content.firstChild) content.removeChild(content.firstChild);   // also drops any nested placeholder control
+    runs.forEach(r => content.appendChild(r));
+  }
+}
+function setDropdownItems(doc, sdt, values) {
+  const dd = kid(kid(sdt, 'sdtPr'), 'dropDownList'); if (!dd) return;
+  while (dd.firstChild) dd.removeChild(dd.firstChild);
+  const choose = wEl(doc, 'listItem'); choose.setAttributeNS(WNS, 'w:value', 'Choose an item.'); dd.appendChild(choose);
+  values.forEach(v => { const li = wEl(doc, 'listItem'); li.setAttributeNS(WNS, 'w:displayText', v); li.setAttributeNS(WNS, 'w:value', v); dd.appendChild(li); });
+}
+function setDropdown(doc, sdt, value) {
+  const dd = kid(kid(sdt, 'sdtPr'), 'dropDownList');
+  if (dd) {
+    const have = [...dd.childNodes].some(li => li.getAttributeNS && li.getAttributeNS(WNS, 'value') === value);
+    if (!have) { const li = wEl(doc, 'listItem'); li.setAttributeNS(WNS, 'w:displayText', value); li.setAttributeNS(WNS, 'w:value', value); dd.appendChild(li); }
+    dd.setAttributeNS(WNS, 'w:lastValue', value);
+  }
+  setSdtText(doc, sdt, value, false);
+}
+// Some dropdowns ship pre-selected (for example "traditional"). If nothing was chosen, show a prompt instead of a false answer.
+function markPlaceholder(doc, sdt, text) {
+  const pr = kid(sdt, 'sdtPr');
+  if (!kid(pr, 'showingPlcHdr')) {
+    const flag = wEl(doc, 'showingPlcHdr'), after = kid(pr, 'placeholder') || kid(pr, 'id');
+    if (after) pr.insertBefore(flag, after.nextSibling); else pr.appendChild(flag);
+  }
+  const dd = kid(pr, 'dropDownList'); if (dd && dd.hasAttributeNS(WNS, 'lastValue')) dd.removeAttributeNS(WNS, 'lastValue');
+  setSdtText(doc, sdt, text, true);
+}
+function oacTemplateValues(meta) {
+  const v = oacRead();
+  const stripHours = x => (x || '').replace(/\s*hours?\s*$/i, '');
+  v.clockHours = stripHours(v.clockHours); v.classroomHours = stripHours(v.classroomHours);
+  v.labHours = /^\d+(\.\d+)?$/.test(v.labHours || '') ? `${v.labHours} hours` : (v.labHours || '');
+  ['present', 'absent', 'staff'].forEach(k => { v[k] = (v[k] || '').split('\n').map(x => x.trim()).filter(Boolean).join('\n'); });
+  v.callTime = to12h(v.callTime); v.adjournTime = to12h(v.adjournTime);
+  v.date = meta.dateISO; v.dateText = meta.date; v.time = to12h($('meetingTime').value); v.location = $('meetingLocation').value.trim();
+  return v;
+}
+function applyOacTerms(docs, v) {
+  // The template carries tokens instead of a fixed term, so it never needs editing when a term rolls over.
+  const tokens = {
+    '{{TERM}}': v.term || '(term)',
+    '{{PREV_TERM}}': prevTerm(v.term) || '(previous term)',
+    '{{NEXT_TERM}}': nextTerm(v.term) || '(next term)',
+    '{{ACADEMIC_YEAR}}': academicYear(v.term) || '(academic year)'
+  };
+  for (const doc of docs) for (const p of doc.getElementsByTagNameNS(WNS, 'p')) {
+    if (v.nextMeeting) replaceInParagraph(p, '{{NEXT_TERM}}, date TBD', v.nextMeeting);
+    for (const [token, value] of Object.entries(tokens)) replaceInParagraph(p, token, value);
+  }
+}
+function fillOac(doc, v) {
+  const byTag = {};
+  for (const sdt of doc.getElementsByTagNameNS(WNS, 'sdt')) {
+    const pr = kid(sdt, 'sdtPr'), tag = pr && kid(pr, 'tag'), val = tag && tag.getAttributeNS(WNS, 'val');
+    if (val && val.startsWith('oac:')) (byTag[val.slice(4)] = byTag[val.slice(4)] || []).push(sdt);
+  }
+  (byTag.program || []).forEach(s => setDropdownItems(doc, s, PROGRAMS));
+  const DROPS = ['program', 'quorum', 'outcome', 'delivery', 'wbl', 'curriculum', 'assessment'];
+  const PRESELECTED = ['delivery', 'wbl', 'curriculum', 'assessment'];
+  for (const [k, list] of Object.entries(byTag)) {
+    const val = v[k] || '';
+    for (const sdt of list) {
+      if (k === 'date') {
+        if (v.date) { const d = kid(kid(sdt, 'sdtPr'), 'date'); if (d) d.setAttributeNS(WNS, 'w:fullDate', v.date + 'T00:00:00Z'); setSdtText(doc, sdt, v.dateText, false); }
+      } else if (DROPS.includes(k)) {
+        if (val) setDropdown(doc, sdt, val); else if (PRESELECTED.includes(k)) markPlaceholder(doc, sdt, 'Choose an item.');
+      } else if (val) setSdtText(doc, sdt, val, false);
+    }
+  }
+  // The template says "take an ..." before the exam name, which is wrong for "State Licensure" or "Teacher-Made Test".
+  const exam = (byTag.assessment || [])[0];
+  if (exam && v.assessment && !/^[aeiou]/i.test(v.assessment)) { const p = nearest(exam, 'p'); if (p) replaceInParagraph(p, 'take an ', 'take a '); }
+  // The template prints a fixed "AM" after the call-to-order time control. The time now carries its own AM/PM.
+  if (v.callTime) for (const sdt of byTag.callTime || []) { const p = nearest(sdt, 'p'); if (p) replaceInParagraph(p, ' AM by ', ' by '); }
+}
+// "AI in the Industry" is plain text in the template, with no field. Add the notes under the question.
+function addAiIndustryNotes(doc, text) {
+  if (!text) return;
+  for (const p of doc.getElementsByTagNameNS(WNS, 'p')) {
+    if (wText(p, true).map(t => t.textContent).join('').trim() !== 'How is the industry being influenced by AI?') continue;
+    const run0 = p.getElementsByTagNameNS(WNS, 'r')[0], rPr = run0 && kid(run0, 'rPr'), pPr = kid(p, 'pPr');
+    let anchor = p;
+    text.split('\n').filter(l => l.trim()).forEach(line => {
+      const np = wEl(doc, 'p'); if (pPr) np.appendChild(pPr.cloneNode(true));
+      const r = wEl(doc, 'r'); if (rPr) r.appendChild(rPr.cloneNode(true));
+      const t = wEl(doc, 't'); t.setAttributeNS(XMLNS, 'xml:space', 'preserve'); t.textContent = line; r.appendChild(t); np.appendChild(r);
+      anchor.parentNode.insertBefore(np, anchor.nextSibling); anchor = np;
+    });
+    return;
+  }
+}
+async function buildOacDocx(meta) {
+  if (!window.JSZip) throw new Error('The zip library did not load. Check your network and reload the page.');
+  const zip = await JSZip.loadAsync(await loadOacTemplate());
+  const names = Object.keys(zip.files).filter(n => /^word\/(document|header\d*|footer\d*)\.xml$/.test(n));
+  const docs = {};
+  for (const n of names) {
+    docs[n] = new DOMParser().parseFromString(await zip.file(n).async('string'), 'application/xml');
+    if (docs[n].getElementsByTagName('parsererror').length) throw new Error('The OAC template could not be read.');
+  }
+  const v = oacTemplateValues(meta);
+  applyOacTerms(Object.values(docs), v);            // first, so notes the user typed are never touched
+  fillOac(docs['word/document.xml'], v);
+  addAiIndustryNotes(docs['word/document.xml'], v.aiIndustry);
+  for (const n of names) {
+    let xml = new XMLSerializer().serializeToString(docs[n]);
+    if (!xml.startsWith('<?xml')) xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + xml;
+    zip.file(n, xml);
+  }
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
+}
+async function downloadOac() {
+  const meta = getMeta();
+  if (!meta.program) { toast('Choose the program first.'); $('oac_program').focus(); return; }
+  el.docx.disabled = true;
+  try {
+    download(await buildOacDocx(meta), packageNames(meta).minutes);
+    exported = true; toast('OAC minutes downloaded.');
+  } catch (e) { console.error(e); toast(e.message || 'The OAC minutes could not be created.'); }
+  refreshDocxBtn();
+}
+
+/* ============================================================
    Word export
    ============================================================ */
 el.docx.addEventListener('click', async () => {
+  if (isOac()) { downloadOac(); return; }
   if (!minutes) return;
   if (!window.docx) { toast('The Word export library did not load. Check your network and reload the page.'); return; }
   el.docx.disabled = true;
@@ -1668,13 +2119,15 @@ async function buildInfoDoc(meta, names) {
   const when = rec.startedAt ? rec.startedAt.toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }) : 'Not recorded';
   const size = `${(rec.blob.size / 1048576).toFixed(1)} MB`;
   const rows = [
-    ['Meeting type', meta.category], ['Date', meta.date], ['Start time', meta.time], ['Location', meta.location],
+    ['Meeting type', meta.category], ...(meta.isOac ? [['Program', meta.program || 'Not selected'], ['Term', meta.term || 'Not specified']] : []), ['Date', meta.date], ['Start time', meta.time], ['Location', meta.location],
     ['Prepared by', meta.preparedBy || 'Not specified'],
     ['Expected attendees', meta.attendees ? meta.attendees.split('\n').map(x => x.trim()).filter(Boolean).join('; ') : 'Not provided'],
     ['Recording started', when], ['Recording length', fmtClock(rec.duration)],
     ['Audio file', `${names.audio} (${size})`], ['Audio format', rec.formatLabel || 'Not recorded'],
     ['Recording consent', 'The note taker confirmed before recording that everyone present was told the meeting was being recorded.'],
-    ['Minutes status', minutes ? `Draft minutes written with AI assistance are included in this package (${names.minutes}) and need review.` : 'Audio only. Minutes have not been written yet.']
+    ['Minutes status', meta.isOac
+      ? (names.oacOk ? `The OAC minutes template is included (${names.minutes}), filled from the details entered${oacAi.used ? ' and an AI draft of the recording' : ''}. Review it before use.` : 'The OAC minutes template could not be added to this package. Download it separately.')
+      : minutes ? `Draft minutes written with AI assistance are included in this package (${names.minutes}) and need review.` : 'Audio only. Minutes have not been written yet.']
   ];
   const edge = { style: BorderStyle.SINGLE, size: 4, color: '7A7274' };
   const borders = { top: edge, bottom: edge, left: edge, right: edge };
@@ -1695,7 +2148,7 @@ async function buildInfoDoc(meta, names) {
         new Paragraph({ spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 18, color: 'F37026', space: 4 } },
           children: [new TextRun({ text: 'Meeting recording information', font: HF, bold: true, size: 40, color: INK })] }),
         new Paragraph({ spacing: { before: 120, after: 240 }, children: [run(
-          `This sheet describes a recording of the ${meta.category} held on ${meta.date} at ${meta.time}, location: ${meta.location}. ` +
+          `This sheet describes a recording of the ${meta.label} held on ${meta.date} at ${meta.time}, location: ${meta.location}. ` +
           `The recording was made by ${meta.preparedBy || 'the note taker'} and runs ${fmtClock(rec.duration)}. The details below were entered in the LWTC Meeting Minutes tool.`) ] }),
         new Table({ width: { size: 100, type: WidthType.PERCENTAGE },
           rows: rows.map(([k, v]) => new TableRow({ cantSplit: true, children: [cell(k, 30, true), cell(v, 70, false)] })) })
@@ -1711,18 +2164,22 @@ async function downloadPackage() {
   el.pkg.disabled = true; el.audio.disabled = true;
   try {
     const meta = getMeta(), n = packageNames(meta);
+    let oacBlob = null, oacProblem = '';
+    if (meta.isOac) { try { oacBlob = await buildOacDocx(meta); } catch (e) { oacProblem = e.message || 'unknown problem'; } }
+    n.oacOk = !!oacBlob;
     const files = [[n.audio, rec.blob], [n.info, await buildInfoDoc(meta, n)]];
-    if (minutes) files.push([n.minutes, await buildDocx(meta)]);
+    if (oacBlob) files.push([n.minutes, oacBlob]);
+    else if (minutes) files.push([n.minutes, await buildDocx(meta)]);
     if (window.JSZip) {
       const zip = new JSZip();
       files.forEach(([name, blob]) => zip.file(name, blob));
       download(await zip.generateAsync({ type: 'blob', compression: 'STORE' }), n.zip);   // audio is already compressed
-      toast(logoFailed ? 'Package downloaded. The logo could not be loaded, so the letterhead shows the college name as text.' : 'Recording package downloaded.');
+      toast(oacProblem ? `Package downloaded without the OAC minutes. ${oacProblem}` : logoFailed ? 'Package downloaded. The logo could not be loaded, so the letterhead shows the college name as text.' : 'Recording package downloaded.');
     } else {
       files.forEach(([name, blob], i) => setTimeout(() => download(blob, name), i * 700));
       toast('The zip library did not load, so the files are downloading one by one.');
     }
-    rec.saved = true; if (minutes) exported = true;
+    rec.saved = true; if (minutes || oacBlob) exported = true;
   } catch (e) {
     console.error(e); toast('The package could not be created. Try again, or download the audio only.');
   }
@@ -1737,6 +2194,7 @@ async function downloadPackage() {
   if (canvasUser) $('preparedBy').value = canvasUser;
   const copilotOpt = el.model.querySelector('option[value="copilot"]');
   if (!isConfigured('copilot')) copilotOpt.textContent += ' (setup required)';
+  buildOacForm(); updateCategoryUI();
   refreshAuthUI(); setRecUI('idle'); listMics(); mp3SelfTest();
   if (!(window.AudioContext || window.webkitAudioContext) || !navigator.mediaDevices) { el.record.disabled = true; toast('This browser cannot record audio. Use a current version of Chrome, Edge, Firefox or Safari.'); }
 })();
