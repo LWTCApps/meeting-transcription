@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LWTC | Meeting Minutes</title>
-<link rel="icon" type="image/svg+xml" href="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-icon-cluster.svg">
+<link rel="icon" type="image/svg+xml" href="../assets/logos/svg/lwtc-icon-cluster.svg">
 
 <!-- Brand text face (Source Sans 3) and approved alternate display face (Alfa Slab One).
      If these are blocked (e.g. Canvas CSP), the fallback stacks below take over. -->
@@ -561,7 +561,7 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
 
 <header>
   <div class="site-header">
-    <img src="https://lwtc-brandguide.lwtc.app/assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College">
+    <img src="../assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College" onerror="this.onerror=null;this.src='../assets/logos/png/lwtc-logo.png'">
     <div class="head-right"><a class="home-link" href="../index.html">&larr; Staff tools</a><div class="page-title">Meeting minutes</div></div>
   </div>
   <div class="hue-band" aria-hidden="true"></div>
@@ -757,12 +757,13 @@ const CONFIG = {
 const REDIRECT_URI = location.origin + location.pathname;
 
 // Letterhead for downloaded documents. Fill in the contact details once; blank lines are left out.
-// Host a copy of the logo on the same site as this page if the Word letterhead falls back to text,
-// because the brand site may not allow other pages to read its files.
+// The logo comes from this site's own assets folder, so the browser can embed it in the Word files.
+// (Opening the page straight from disk blocks that, so test over http or https.)
 const LETTERHEAD = { name: 'Lorenzo Walker Technical College', address: '', phone: '', web: '' };
-const LOGO_PNG = 'https://lwtc-brandguide.lwtc.app/assets/logos/png/lwtc-logo.png';
+const LOGO_PNG = '../assets/logos/png/lwtc-logo.png';
 const MAX_REQUEST_BYTES = 19.5 * 1024 * 1024;   // Gemini inline request limit is about 20 MB
 const SILENT_LEVEL = 0.02;                     // peak below this for a whole recording = treated as silent
+const ENCODE_RATE = 16000;                      // audio is resampled to this rate before encoding (see makeResampler)
 const MP3_KBPS = 32;                           // mono MP3: about 14 MB per hour, small enough for roughly an hour in one AI request
 
 const EN_LABELS = {
@@ -908,7 +909,7 @@ el.model.addEventListener('change', () => {
 /* ============================================================
    Recording
    ============================================================ */
-const rec = { stream: null, ctx: null, node: null, enc: null, chunks: [], wavParts: [], wavFactor: 3, rate: 48000, frames: 0, format: '', formatLabel: '', blob: null, mime: '', elapsed: 0, duration: 0, startedAt: null, saved: false, silent: false, previewUrl: null, last: 0, tick: null, state: 'idle' };
+const rec = { stream: null, ctx: null, node: null, enc: null, chunks: [], wavParts: [], rate: 48000, frames: 0, format: '', formatLabel: '', blob: null, mime: '', elapsed: 0, duration: 0, startedAt: null, saved: false, silent: false, previewUrl: null, last: 0, tick: null, state: 'idle' };
 let canvasMode = 'empty';
 let minutes = null;      // { en: {...}, tr?: {...} }
 let view = 'en';
@@ -1080,11 +1081,40 @@ function floatTo16(f) {
   for (let i = 0; i < f.length; i++) { const v = Math.max(-1, Math.min(1, f[i])); o[i] = v < 0 ? v * 32768 : v * 32767; }
   return o;
 }
-function decimate(f, k) {
-  if (k <= 1) return f;
-  const n = Math.floor(f.length / k), o = new Float32Array(n);
-  for (let i = 0; i < n; i++) { let a = 0; for (let j = 0; j < k; j++) a += f[i * k + j]; o[i] = a / k; }
-  return o;
+/* Why the audio is resampled first: the MP3 encoder (lamejs) mishandles several common sample rates. At 48,000 Hz,
+   the default on most Windows machines, its output is about 40 dB quieter, which is effectively silent.
+   Every device rate is converted to ENCODE_RATE (16 kHz, the standard for speech) before encoding.
+   This resampler averages the input over each output interval, which also acts as the low-pass filter. */
+function makeResampler(inRate, outRate) {
+  const step = inRate / outRate;
+  let need = step, acc = 0;
+  return f => {
+    const out = [];
+    for (let i = 0; i < f.length; i++) {
+      let w = 1; const v = f[i];
+      while (w >= need - 1e-9) { acc += v * need; out.push(acc / step); w -= need; need = step; acc = 0; }
+      if (w > 1e-9) { acc += v * w; need -= w; }
+    }
+    return Float32Array.from(out);
+  };
+}
+// Encode and decode a test tone once per session. If the result is not clearly audible, recordings are saved as WAV instead.
+let mp3Ok = null;
+async function mp3SelfTest() {
+  if (mp3Ok !== null) return mp3Ok;
+  try {
+    if (typeof lamejs === 'undefined') throw new Error('encoder missing');
+    const enc = new lamejs.Mp3Encoder(1, ENCODE_RATE, MP3_KBPS);
+    const n = ENCODE_RATE * 2, pcm = new Int16Array(n), parts = [];
+    for (let i = 0; i < n; i++) pcm[i] = Math.round(9000 * Math.sin(2 * Math.PI * 440 * i / ENCODE_RATE));
+    for (let o = 0; o < n; o += 4096) { const r = enc.encodeBuffer(pcm.subarray(o, Math.min(n, o + 4096))); if (r.length) parts.push(new Uint8Array(r)); }
+    const tail = enc.flush(); if (tail.length) parts.push(new Uint8Array(tail));
+    const Off = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const buf = await new Off(1, ENCODE_RATE, ENCODE_RATE).decodeAudioData(await new Blob(parts).arrayBuffer());
+    const d = buf.getChannelData(0); let sum = 0; for (let i = 0; i < d.length; i++) sum += d[i] * d[i];
+    mp3Ok = Math.sqrt(sum / d.length) > 0.08;        // a healthy result is about 0.19
+  } catch (e) { mp3Ok = false; }
+  return mp3Ok;
 }
 function handleBlock(f) {
   let p = 0; for (let i = 0; i < f.length; i++) { const a = Math.abs(f[i]); if (a > p) p = a; }
@@ -1092,20 +1122,24 @@ function handleBlock(f) {
   if (rec.state !== 'recording') return;          // paused or stopping: show the level, keep nothing
   if (p > mic.peak) mic.peak = p;
   rec.frames += f.length;
+  const pcm = floatTo16(rec.resample(f));
   if (rec.enc) {
-    const out = rec.enc.encodeBuffer(floatTo16(f));
+    const out = rec.enc.encodeBuffer(pcm);
     if (out.length) rec.chunks.push(new Uint8Array(out));
-  } else rec.wavParts.push(decimate(f, rec.wavFactor));
+  } else rec.wavParts.push(pcm);
 }
 async function startCapture(stream) {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   const ctx = new Ctx(); rec.ctx = ctx;
   if (ctx.resume) await ctx.resume();
   if (ctx.state !== 'running') throw new Error('audio-context-blocked');
-  rec.rate = ctx.sampleRate; rec.wavFactor = Math.max(1, Math.round(ctx.sampleRate / 16000));
+  rec.rate = ctx.sampleRate; rec.resample = makeResampler(ctx.sampleRate, ENCODE_RATE);
   rec.chunks = []; rec.wavParts = []; rec.frames = 0;
-  try { rec.enc = new lamejs.Mp3Encoder(1, rec.rate, MP3_KBPS); rec.format = 'mp3'; }
-  catch (e) { rec.enc = null; rec.format = 'wav'; }
+  if (await mp3SelfTest()) { rec.enc = new lamejs.Mp3Encoder(1, ENCODE_RATE, MP3_KBPS); rec.format = 'mp3'; }
+  else {
+    rec.enc = null; rec.format = 'wav';
+    toast('MP3 saving did not pass its self-check in this browser, so this recording will be saved as WAV.');
+  }
   const src = ctx.createMediaStreamSource(stream);
   const sink = ctx.createGain(); sink.gain.value = 0; sink.connect(ctx.destination);   // keeps the graph running without playing sound
   if (ctx.audioWorklet && window.AudioWorkletNode) {
@@ -1133,17 +1167,17 @@ function finishCapture() {
   try { rec.ctx.close(); } catch (e) {}
   if (rec.enc) {
     const tail = rec.enc.flush(); if (tail.length) rec.chunks.push(new Uint8Array(tail));
-    rec.blob = new Blob(rec.chunks, { type: 'audio/mpeg' }); rec.mime = 'audio/mpeg'; rec.formatLabel = `MP3, mono, ${MP3_KBPS} kbps`;
+    rec.blob = new Blob(rec.chunks, { type: 'audio/mpeg' }); rec.mime = 'audio/mpeg'; rec.formatLabel = `MP3, mono, ${MP3_KBPS} kbps, ${ENCODE_RATE / 1000} kHz`;
   } else {
     let n = 0; rec.wavParts.forEach(x => n += x.length);
-    const rate = Math.round(rec.rate / rec.wavFactor), buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf);
-    const w = (o, t) => { for (let i = 0; i < t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
-    w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true);
-    dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true);
-    dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 2, true);
-    let off = 44;
-    for (const part of rec.wavParts) for (let i = 0; i < part.length; i++) { const v = Math.max(-1, Math.min(1, part[i])); dv.setInt16(off, v < 0 ? v * 32768 : v * 32767, true); off += 2; }
-    rec.blob = new Blob([buf], { type: 'audio/wav' }); rec.mime = 'audio/wav'; rec.formatLabel = `WAV, mono, 16-bit, ${rate} Hz`;
+    const pcm = new Int16Array(n); let off = 0;
+    for (const part of rec.wavParts) { pcm.set(part, off); off += part.length; }
+    const hdr = new DataView(new ArrayBuffer(44));
+    const w = (o, t) => { for (let i = 0; i < t.length; i++) hdr.setUint8(o + i, t.charCodeAt(i)); };
+    w(0, 'RIFF'); hdr.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); hdr.setUint32(16, 16, true);
+    hdr.setUint16(20, 1, true); hdr.setUint16(22, 1, true); hdr.setUint32(24, ENCODE_RATE, true); hdr.setUint32(28, ENCODE_RATE * 2, true);
+    hdr.setUint16(32, 2, true); hdr.setUint16(34, 16, true); w(36, 'data'); hdr.setUint32(40, n * 2, true);
+    rec.blob = new Blob([hdr.buffer, pcm.buffer], { type: 'audio/wav' }); rec.mime = 'audio/wav'; rec.formatLabel = `WAV, mono, 16-bit, ${ENCODE_RATE} Hz`;
   }
   rec.duration = rec.frames / rec.rate * 1000;
   rec.chunks = []; rec.wavParts = [];
@@ -1703,7 +1737,7 @@ async function downloadPackage() {
   if (canvasUser) $('preparedBy').value = canvasUser;
   const copilotOpt = el.model.querySelector('option[value="copilot"]');
   if (!isConfigured('copilot')) copilotOpt.textContent += ' (setup required)';
-  refreshAuthUI(); setRecUI('idle'); listMics();
+  refreshAuthUI(); setRecUI('idle'); listMics(); mp3SelfTest();
   if (!(window.AudioContext || window.webkitAudioContext) || !navigator.mediaDevices) { el.record.disabled = true; toast('This browser cannot record audio. Use a current version of Chrome, Edge, Firefox or Safari.'); }
 })();
 
