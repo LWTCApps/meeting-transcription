@@ -572,7 +572,7 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
 <header>
   <div class="site-header">
     <img src="/assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College" onerror="this.onerror=null;this.src='/assets/logos/png/lwtc-logo.png'">
-    <div class="head-right"><a class="home-link" href="/index.html">&larr; Staff tools</a><a class="home-link" href="/help/index.html">Help and FAQ</a><div class="page-title">Meeting minutes</div></div>
+    <div class="head-right"><a class="home-link" href="../index.html">&larr; Staff tools</a><a class="home-link" href="../help/index.html">Help and FAQ</a><div class="page-title">Meeting minutes</div></div>
   </div>
   <div class="hue-band" aria-hidden="true"></div>
 </header>
@@ -667,10 +667,15 @@ table.actions td:last-child { width: 1%; white-space: nowrap; border-left: 0; }
 
     <section class="step" aria-labelledby="h-record">
       <h2 class="step-title" id="h-record"><span class="bubble" style="--c:var(--green)" aria-hidden="true">2</span>Record</h2>
-      <div class="check" style="margin-bottom:var(--s3)">
+      <div class="check" style="margin-bottom:var(--s2)">
         <input type="checkbox" id="consent">
         <label for="consent">Everyone present has been told this meeting is being recorded.</label>
       </div>
+      <div class="check" style="margin-bottom:var(--s3)">
+        <input type="checkbox" id="noConsent">
+        <label for="noConsent">Meeting Participants did not consent to have the meeting recorded</label>
+      </div>
+      <p class="hint" id="noConsentNote" style="margin:0 0 var(--s3)" hidden>Recording is turned off. Fill in the meeting details, then use Download meeting document in the Export section.</p>
       <div class="field">
         <label for="micSelect">Microphone</label>
         <select id="micSelect"><option value="">Default microphone</option></select>
@@ -1158,7 +1163,7 @@ async function runMicCheck() {
       'In the browser, click the lock icon beside the address bar and make sure Microphone is set to Allow.'
     ].forEach(t => say(t));
     renderReport(lines, 'bad');
-  } finally { el.micCheck.disabled = false; el.record.disabled = rec.state !== 'idle' && rec.state !== 'saved' && rec.state !== 'done'; }
+  } finally { setRecUI(rec.state); }
 }
 el.micCheck.addEventListener('click', runMicCheck);
 
@@ -1304,7 +1309,7 @@ function afterStop() {
 function setRecUI(s) {
   rec.state = s;
   const live = s === 'recording', paused = s === 'paused', busy = s === 'processing' || s === 'stopping';
-  el.record.disabled = live || paused || busy;
+  el.record.disabled = live || paused || busy || noConsent();
   el.pause.disabled = !(live || paused);
   el.stop.disabled = !(live || paused);
   el.pause.textContent = paused ? 'Resume' : 'Pause';
@@ -1312,6 +1317,7 @@ function setRecUI(s) {
   el.recLabel.textContent = { idle: 'Ready', recording: 'Recording', paused: 'Paused', stopping: 'Saving recording…', processing: 'Writing minutes…', saved: 'Recording saved', done: 'Finished' }[s];
   el.audio.disabled = !rec.blob || busy;
   el.pkg.disabled = !rec.blob || busy;
+  refreshConsentUI();
 }
 function tickTimer() {
   if (rec.state !== 'recording') return;
@@ -1457,7 +1463,7 @@ function getMeta() {
   const program = oac ? $('oac_program').value : '';
   const category = meetingName();
   return {
-    category, isOac: oac, program, term: oac ? $('oac_term').value.trim() : '',
+    category, isOac: oac, noConsent: $('noConsent').checked, program, term: oac ? $('oac_term').value.trim() : '',
     label: oac && program ? `${category} (${program})` : category,
     dateISO: $('meetingDate').value, date: fmtDate($('meetingDate').value),
     time: fmtTime($('meetingTime').value), location: $('meetingLocation').value.trim() || 'Not specified',
@@ -1715,8 +1721,9 @@ function oacAuto() {
   if (oacEl('present').value.split('\n').filter(x => x.trim()).length >= 3) setIfUntouched('quorum', 'Yes');
 }
 function refreshDocxBtn() {
-  el.docx.textContent = isOac() ? 'Download meeting document (.docx)' : 'Download minutes (.docx)';
-  el.docx.disabled = isOac() ? false : !minutes;
+  const doc = isOac() || noConsent();       // without a recording the meeting document can always be downloaded
+  el.docx.textContent = doc ? 'Download meeting document (.docx)' : 'Download minutes (.docx)';
+  el.docx.disabled = doc ? false : !minutes;
 }
 function to12h(hhmm) {
   if (!/^\d{1,2}:\d{2}$/.test(hhmm || '')) return '';
@@ -1791,6 +1798,44 @@ function showOacDraft() {
     h('div', { class: 'actions' },
       h('button', { class: 'btn btn-primary', type: 'button', text: 'Download meeting document (.docx)', onclick: downloadOac }),
       h('button', { class: 'btn', type: 'button', text: 'Download recording package', onclick: () => downloadPackage() }))));
+}
+
+/* ============================================================
+   "Participants did not consent": no recording, but the meeting document is still available
+   ============================================================ */
+function noConsent() { return $('noConsent').checked; }
+function refreshConsentUI() {
+  const nc = noConsent(), busy = ['recording', 'paused', 'processing', 'stopping'].includes(rec.state);
+  $('consent').disabled = nc;
+  $('noConsent').disabled = busy;                       // cannot be changed in the middle of a recording
+  el.micSel.disabled = nc; el.micCheck.disabled = nc;
+  $('noConsentNote').hidden = !nc;
+}
+function discardRecording() {
+  if (rec.previewUrl) { URL.revokeObjectURL(rec.previewUrl); rec.previewUrl = null; }
+  rec.blob = null; rec.chunks = []; rec.wavParts = []; rec.duration = 0; rec.frames = 0; rec.saved = true;
+  minutes = null; oacAi.used = false; exported = true;
+  canvasMode = 'empty'; el.out.hidden = true; el.empty.hidden = false; el.toggle.hidden = true;
+  setRecUI('idle');
+}
+$('noConsent').addEventListener('change', () => {
+  const box = $('noConsent');
+  if (box.checked) {
+    if (rec.blob && !confirm('Participants did not consent, so the recording on this page will be deleted. Delete it?')) { box.checked = false; return; }
+    if (rec.blob) discardRecording();
+    $('consent').checked = false;
+  }
+  refreshDocxBtn(); setRecUI(rec.state);
+});
+async function downloadInfoDoc() {
+  if (!window.docx) { toast('The document library did not load. Check your network and reload the page.'); return; }
+  el.docx.disabled = true;
+  try {
+    const meta = getMeta();
+    download(await buildInfoDoc(meta, packageNames(meta)), packageNames(meta).info);
+    exported = true; toast(logoFailed ? 'Downloaded. The logo could not be loaded, so the letterhead shows the college name as text.' : 'Meeting document downloaded.');
+  } catch (e) { console.error(e); toast(e.message || 'The document could not be created.'); }
+  refreshDocxBtn();
 }
 
 /* ============================================================
@@ -1899,6 +1944,7 @@ async function downloadOac() {
    ============================================================ */
 el.docx.addEventListener('click', async () => {
   if (isOac()) { downloadOac(); return; }
+  if (noConsent()) { downloadInfoDoc(); return; }
   if (!minutes) return;
   if (!window.docx) { toast('The Word export library did not load. Check your network and reload the page.'); return; }
   el.docx.disabled = true;
@@ -2041,7 +2087,7 @@ async function buildInfoDoc(meta, names) {
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle } = docx;
   const INK = '231F20', HF = 'Rockwell', BF = 'Calibri';
   const run = (t, o = {}) => new TextRun({ text: t, font: BF, color: INK, size: 22, ...o });
-  const lh = await makeLetterhead(meta.isOac ? 'Keep this document together with the audio file.' : 'Keep this sheet together with the audio file.');
+  const lh = await makeLetterhead(meta.noConsent ? 'No audio recording was made for this meeting.' : meta.isOac ? 'Keep this document together with the audio file.' : 'Keep this sheet together with the audio file.');
   const has = !!rec.blob;
   const when = rec.startedAt ? rec.startedAt.toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' }).replace(/[\u202f\u00a0]/g, ' ') : 'Not recorded';
   const size = has ? `${(rec.blob.size / 1048576).toFixed(1)} MB` : '';
@@ -2049,7 +2095,7 @@ async function buildInfoDoc(meta, names) {
     ['Recording started', when], ['Recording length', fmtClock(rec.duration)],
     ['Audio file', `${names.audio} (${size})`], ['Audio format', rec.formatLabel || 'Not recorded'],
     ['Recording consent', 'The note taker confirmed before recording that everyone present was told the meeting was being recorded.']
-  ] : [['Recording', 'No recording has been made for this document yet.']];
+  ] : [['Recording', meta.noConsent ? 'No recording was made. Meeting participants did not consent to have the meeting recorded.' : 'No recording has been made for this document yet.']];
   const rows = [
     ['Meeting type', meta.category], ...(meta.isOac ? [['Program', meta.program || 'Not selected'], ['Term', meta.term || 'Not specified']] : []), ['Date', meta.date],
     ['Start time', meta.time], ['Location', meta.location],
@@ -2058,6 +2104,7 @@ async function buildInfoDoc(meta, names) {
     ...recordingRows,
     ['Minutes status', meta.isOac
       ? `The OAC minutes begin on the next page of this document, filled in from the details entered${oacAi.used ? ' and an AI draft of the recording' : ''}. Review them before use.`
+      : meta.noConsent ? 'No recording was made, so no minutes were drafted by this tool. Use this sheet with the minutes document you normally write.'
       : minutes ? `Draft minutes written with AI assistance are included in this package (${names.minutes}) and need review.` : 'Audio only. Minutes have not been written yet.']
   ];
   const edge = { style: BorderStyle.SINGLE, size: 4, color: '7A7274' };
@@ -2070,7 +2117,7 @@ async function buildInfoDoc(meta, names) {
   });
   const intro = has
     ? `This sheet describes a recording of the ${meta.label} held on ${meta.date} at ${meta.time}, location: ${meta.location}. The recording was made by ${meta.preparedBy || 'the note taker'} and runs ${fmtClock(rec.duration)}. The details below were entered in the LWTC Meeting Minutes tool.`
-    : `This sheet describes the ${meta.label} held on ${meta.date} at ${meta.time}, location: ${meta.location}. The details below were entered in the LWTC Meeting Minutes tool.`;
+    : `This sheet describes the ${meta.label} held on ${meta.date} at ${meta.time}, location: ${meta.location}.${meta.noConsent ? ' No recording was made because meeting participants did not consent.' : ''} The details below were entered in the LWTC Meeting Minutes tool.`;
   const children = [
     ...lh.top,
     new Paragraph({ spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 18, color: 'F37026', space: 4 } },
