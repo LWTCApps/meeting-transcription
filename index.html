@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LWTC | Staff tools</title>
-<link rel="icon" type="image/svg+xml" href="assets/logos/svg/lwtc-icon-cluster.svg">
+<link rel="icon" type="image/svg+xml" href="/assets/logos/svg/lwtc-icon-cluster.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -73,6 +73,9 @@ main { max-width: 1100px; margin: 0 auto; padding: var(--s5) var(--s4); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 24px; border: 2px solid var(--ink); border-radius: var(--r3); background: var(--orange); color: var(--ink); font-weight: 700; text-decoration: none; align-self: flex-start; }
 .btn:hover { background: var(--orange-deep); }
+.btn-quiet { background: var(--white); }
+.btn-quiet:hover { background: var(--gold-tint); }
+.btn-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
 
 footer { max-width: 1100px; margin: 0 auto; padding: 0 var(--s4) var(--s4); color: var(--muted); font-size: 15px; }
 footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
@@ -91,7 +94,7 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
 
 <header>
   <div class="bar">
-    <a href="./"><img src="assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College" onerror="this.onerror=null;this.src='assets/logos/png/lwtc-logo.png'"></a>
+    <a href="./"><img src="/assets/logos/svg/lwtc-logo.svg" alt="Lorenzo Walker Technical College" onerror="this.onerror=null;this.src='/assets/logos/png/lwtc-logo.png'"></a>
     <span class="bar-label">Staff tools</span>
   </div>
   <div class="hue-band" aria-hidden="true"></div>
@@ -105,10 +108,10 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
       <p class="notice"><strong>Staff sign-in is coming.</strong> Until it is ready, this page is open to anyone who has the link, so please share it only with colleagues.</p>
     </div>
     <div class="cluster" aria-hidden="true">
-      <img class="top" src="assets/icons/svg/lwtc-bubble-orange.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-orange.png'">
-      <img class="left" src="assets/icons/svg/lwtc-bubble-green.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-green.png'">
-      <img class="right" src="assets/icons/svg/lwtc-bubble-gold.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-gold.png'">
-      <img class="bottom" src="assets/icons/svg/lwtc-bubble-blue.svg" alt="" onerror="this.onerror=null;this.src='assets/icons/png/lwtc-bubble-blue.png'">
+      <img class="top" src="/assets/icons/svg/lwtc-bubble-orange.svg" alt="" onerror="this.onerror=null;this.src='/assets/icons/png/lwtc-bubble-orange.png'">
+      <img class="left" src="/assets/icons/svg/lwtc-bubble-green.svg" alt="" onerror="this.onerror=null;this.src='/assets/icons/png/lwtc-bubble-green.png'">
+      <img class="right" src="/assets/icons/svg/lwtc-bubble-gold.svg" alt="" onerror="this.onerror=null;this.src='/assets/icons/png/lwtc-bubble-gold.png'">
+      <img class="bottom" src="/assets/icons/svg/lwtc-bubble-blue.svg" alt="" onerror="this.onerror=null;this.src='/assets/icons/png/lwtc-bubble-blue.png'">
     </div>
   </section>
 
@@ -120,6 +123,15 @@ footer div { border-top: 1px solid var(--line); padding-top: var(--s3); }
         <h3>Meeting minutes</h3>
         <p class="grow">Record a meeting and download the audio with an information sheet on LWTC letterhead. Optionally, have AI write draft minutes you can review and edit.</p>
         <a class="btn" href="meeting/index.html">Open meeting minutes</a>
+      </li>
+      <li class="tool">
+        <span class="bubble" style="--c:var(--green)" aria-hidden="true"></span>
+        <h3>Meeting minutes help</h3>
+        <p class="grow">A step-by-step guide to recording a meeting and building the minutes, plus answers to common questions.</p>
+        <div class="btn-row">
+          <a class="btn btn-quiet" href="help/index.html">Read the FAQ</a>
+          <a class="btn btn-quiet" href="help/LWTC-Meeting-Minutes-Staff-Guide.pdf" download>Download the PDF guide</a>
+        </div>
       </li>
       <li class="tool soon">
         <span class="bubble" style="--c:var(--blue)" aria-hidden="true"></span>
